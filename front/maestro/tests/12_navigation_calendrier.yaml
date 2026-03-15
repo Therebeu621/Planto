@@ -1,0 +1,45 @@
+appId: com.projet.planto_app
+---
+# TC-012 : Navigation vers le Calendrier et vérification de l'affichage
+- launchApp:
+    clearState: true
+
+- assertVisible:
+    text: "PLANTO"
+
+# Se connecter
+- tapOn:
+    text: "Adresse email"
+- inputText: "test@test.com"
+
+- tapOn:
+    text: "Mot de passe"
+- inputText: "password123"
+
+- tapOn:
+    text: "SE CONNECTER"
+
+# Attendre la page d'accueil
+- assertVisible:
+    text: "PLANTO"
+
+# Naviguer vers le Calendrier depuis la page d'accueil
+# Le calendrier est accessible via l'icône dans l'AppBar ou la navigation latérale
+- tapOn:
+    text: "Calendrier"
+    optional: true
+
+# Si pas dans la nav principale, chercher l'icône calendrier dans l'AppBar
+- tapOn:
+    id: "calendar_icon"
+    optional: true
+
+# Vérifier le titre de la page Calendrier
+- assertVisible:
+    text: "Calendrier"
+
+# Vérifier que le calendrier TableCalendar est visible
+# Le mois courant doit apparaître
+- assertVisible:
+    text: "2026"
+    optional: true

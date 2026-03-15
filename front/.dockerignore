@@ -1,0 +1,20 @@
+# Build artifacts
+build/
+.dart_tool/
+.packages
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+*.swp
+
+# Logs
+*.log
+
+# Generated files
+*.g.dart
+*.freezed.dart

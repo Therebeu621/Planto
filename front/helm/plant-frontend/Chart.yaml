@@ -1,0 +1,10 @@
+apiVersion: v2
+name: plant-frontend
+description: Helm chart for Plant Management Flutter Frontend (Nginx)
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - flutter
+  - plant-management
+  - nginx

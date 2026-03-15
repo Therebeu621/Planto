@@ -1,0 +1,245 @@
+# ==============================================
+# GitLab CI/CD Pipeline — Plant Management Backend
+# ==============================================
+# Stages (in required order):
+#   1. sast     — Static analysis (SpotBugs + Checkstyle)
+#   2. sca      — Dependency vulnerability scanning (Trivy)
+#   3. test     — Unit + integration tests
+#   4. build    — Javadoc, OpenAPI spec, Docker images
+# ==============================================
+
+stages:
+  - sast
+  - sca
+  - test
+  - build
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end"
+  GIT_SHA: "$CI_COMMIT_SHORT_SHA"
+  HTTP_PROXY: "http://cache-etu.univ-artois.fr:3128"
+  HTTPS_PROXY: "http://cache-etu.univ-artois.fr:3128"
+  http_proxy: "http://cache-etu.univ-artois.fr:3128"
+  https_proxy: "http://cache-etu.univ-artois.fr:3128"
+  NO_PROXY: "localhost,127.0.0.1,postgres"
+
+cache:
+  key: "${CI_COMMIT_REF_SLUG}"
+  paths:
+    - .m2/repository/
+
+default:
+  image: maven:3.9-eclipse-temurin-21
+  tags:
+    - k8s-etu
+  before_script:
+    - |
+      mkdir -p ~/.m2
+      cat > ~/.m2/settings.xml << 'SETTINGS_EOF'
+      <settings xmlns="http://maven.apache.org/SETTINGS/1.2.0">
+        <proxies>
+          <proxy>
+            <id>univ-artois-http</id>
+            <active>true</active>
+            <protocol>http</protocol>
+            <host>cache-etu.univ-artois.fr</host>
+            <port>3128</port>
+          </proxy>
+          <proxy>
+            <id>univ-artois-https</id>
+            <active>true</active>
+            <protocol>https</protocol>
+            <host>cache-etu.univ-artois.fr</host>
+            <port>3128</port>
+          </proxy>
+        </proxies>
+      </settings>
+      SETTINGS_EOF
+
+sast-spotbugs:
+  stage: sast
+  script:
+    - ./mvnw $MAVEN_CLI_OPTS compile spotbugs:spotbugs
+  artifacts:
+    when: always
+    paths:
+      - target/spotbugsXml.xml
+      - target/spotbugs-reports/
+    expire_in: 2 weeks
+  allow_failure: true
+
+sast-checkstyle:
+  stage: sast
+  script:
+    - ./mvnw $MAVEN_CLI_OPTS checkstyle:checkstyle
+  artifacts:
+    when: always
+    paths:
+      - target/checkstyle-result.xml
+      - target/site/
+    expire_in: 2 weeks
+  allow_failure: true
+
+sca-trivy:
+  stage: sca
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  tags:
+    - k8s-etu
+  before_script: []
+  script:
+    - trivy fs --scanners vuln --format table --output trivy-report.txt .
+    - trivy fs --scanners vuln --format json --output trivy-report.json .
+  artifacts:
+    when: always
+    paths:
+      - trivy-report.txt
+      - trivy-report.json
+    expire_in: 2 weeks
+  allow_failure: true
+
+tests:
+  stage: test
+  services:
+    - name: postgres:15-alpine
+      alias: postgres
+      variables:
+        POSTGRES_DB: plant_db
+        POSTGRES_USER: plant_user
+        POSTGRES_PASSWORD: plant_pass
+  variables:
+    DB_HOST: postgres
+    DB_PORT: "5432"
+    DB_NAME: plant_db
+    DB_USER: plant_user
+    DB_PASSWORD: plant_pass
+    QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/plant_db
+    QUARKUS_DEVSERVICES_ENABLED: "false"
+  script:
+    - ./mvnw $MAVEN_CLI_OPTS verify
+  artifacts:
+    when: always
+    paths:
+      - target/surefire-reports/
+      - target/jacoco-report/
+    reports:
+      junit: target/surefire-reports/TEST-*.xml
+    expire_in: 2 weeks
+
+build-javadoc:
+  stage: build
+  script:
+    - ./mvnw $MAVEN_CLI_OPTS javadoc:javadoc
+    - |
+      JAVADOC_DIR="$(find target -type d -name apidocs | head -n 1)"
+      test -n "$JAVADOC_DIR"
+      tar -czf "$CI_PROJECT_DIR/javadoc.tar.gz" -C "$JAVADOC_DIR" .
+  artifacts:
+    paths:
+      - javadoc.tar.gz
+    expire_in: 2 weeks
+
+build-openapi:
+  stage: build
+  services:
+    - name: postgres:15-alpine
+      alias: postgres
+      variables:
+        POSTGRES_DB: plant_db
+        POSTGRES_USER: plant_user
+        POSTGRES_PASSWORD: plant_pass
+  variables:
+    DB_HOST: postgres
+    DB_PORT: "5432"
+    DB_NAME: plant_db
+    DB_USER: plant_user
+    DB_PASSWORD: plant_pass
+  script:
+    - ./mvnw $MAVEN_CLI_OPTS package -DskipTests
+    - java -jar target/quarkus-app/quarkus-run.jar > openapi-server.log 2>&1 &
+    - APP_PID=$!
+    - trap 'kill "$APP_PID" 2>/dev/null || true; wait "$APP_PID" 2>/dev/null || true' EXIT
+    - |
+      attempt=0
+      while [ "$attempt" -lt 30 ]; do
+        if curl -fsS -o openapi.yaml.tmp http://localhost:8080/q/openapi?format=yaml; then
+          mv openapi.yaml.tmp openapi.yaml
+          break
+        fi
+        rm -f openapi.yaml.tmp
+        attempt=$((attempt + 1))
+        sleep 2
+      done
+    - test -f openapi.yaml || (cat openapi-server.log && exit 1)
+    - curl -fsS -o openapi.json.tmp http://localhost:8080/q/openapi?format=json
+    - mv openapi.json.tmp openapi.json
+  artifacts:
+    paths:
+      - openapi.yaml
+      - openapi.json
+      - openapi-server.log
+    expire_in: 2 weeks
+
+build-package:
+  stage: build
+  script:
+    - ./mvnw $MAVEN_CLI_OPTS package -DskipTests
+  artifacts:
+    paths:
+      - target/
+    expire_in: 1 day
+
+build-native-package:
+  stage: build
+  image: quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:jdk-21
+  tags:
+    - k8s-etu
+  script:
+    - ./mvnw $MAVEN_CLI_OPTS package -Dnative -DskipTests -Dquarkus.native.container-build=false
+  artifacts:
+    paths:
+      - target/*-runner
+    expire_in: 1 day
+  allow_failure: true
+  timeout: 30m
+
+build-docker-jvm:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [""]
+  tags:
+    - k8s-etu
+  needs:
+    - build-package
+  before_script:
+    - wget -qO /tmp/task.tar.gz "https://github.com/go-task/task/releases/download/v3.40.0/task_linux_amd64.tar.gz"
+    - tar -xzf /tmp/task.tar.gz -C /usr/local/bin task
+  script:
+    - task build-image-jvm-ci GIT_SHA="$CI_COMMIT_SHORT_SHA"
+  artifacts:
+    paths:
+      - plant-backend-*.tar
+    expire_in: 2 weeks
+
+build-docker-native:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [""]
+  tags:
+    - k8s-etu
+  needs:
+    - build-native-package
+  before_script:
+    - wget -qO /tmp/task.tar.gz "https://github.com/go-task/task/releases/download/v3.40.0/task_linux_amd64.tar.gz"
+    - tar -xzf /tmp/task.tar.gz -C /usr/local/bin task
+  script:
+    - task build-image-native-ci GIT_SHA="$CI_COMMIT_SHORT_SHA"
+  artifacts:
+    paths:
+      - plant-backend-*.tar
+    expire_in: 2 weeks
+  allow_failure: true

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: plant-backend
+description: Helm chart for the Plant Management backend (Quarkus)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

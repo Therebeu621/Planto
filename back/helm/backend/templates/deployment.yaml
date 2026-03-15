@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plant-backend.fullname" . }}
+  labels:
+    {{- include "plant-backend.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "plant-backend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "plant-backend.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+{{- if .Values.firebase.existingSecret }}
+          volumeMounts:
+            - name: firebase-credentials
+              mountPath: {{ .Values.firebase.mountPath | quote }}
+              readOnly: true
+{{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "plant-backend.fullname" . }}-config
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "plant-backend.fullname" . }}-secret
+                  key: DB_PASSWORD
+            - name: TREFLE_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "plant-backend.fullname" . }}-secret
+                  key: TREFLE_API_TOKEN
+            - name: PERENUAL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "plant-backend.fullname" . }}-secret
+                  key: PERENUAL_API_KEY
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "plant-backend.fullname" . }}-secret
+                  key: GEMINI_API_KEY
+            - name: OPENWEATHER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "plant-backend.fullname" . }}-secret
+                  key: OPENWEATHER_API_KEY
+            - name: MCP_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "plant-backend.fullname" . }}-secret
+                  key: MCP_API_KEY
+{{- if .Values.mail.host }}
+            - name: MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "plant-backend.fullname" . }}-secret
+                  key: MAIL_PASSWORD
+{{- end }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+{{- if .Values.firebase.existingSecret }}
+      volumes:
+        - name: firebase-credentials
+          secret:
+            secretName: {{ .Values.firebase.existingSecret | quote }}
+            items:
+              - key: {{ .Values.firebase.secretKey | quote }}
+                path: {{ .Values.firebase.secretKey | quote }}
+{{- end }}

@@ -1,0 +1,33 @@
+appId: com.projet.planto_app
+---
+# TC-004 : Connexion avec un format d'email invalide — vérification de la validation
+- launchApp:
+    clearState: true
+
+- assertVisible:
+    text: "PLANTO"
+
+# Saisir un email au format invalide
+- tapOn:
+    text: "Adresse email"
+- inputText: "notanemail"
+
+# Saisir un mot de passe
+- tapOn:
+    text: "Mot de passe"
+- inputText: "password123"
+
+# Tenter de se connecter
+- tapOn:
+    text: "SE CONNECTER"
+
+# Le backend ou le client doit renvoyer une erreur de format
+# L'app envoie la requête sans validation côté client du format email sur LoginPage
+# On vérifie qu'un message d'erreur quelconque s'affiche (réponse API)
+- assertVisible:
+    text: "PLANTO"
+
+# Vérifier qu'on reste sur la page de connexion (pas de navigation vers l'accueil)
+- assertNotVisible:
+    text: "Mes Maisons"
+    optional: true

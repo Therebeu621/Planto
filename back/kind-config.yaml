@@ -1,0 +1,17 @@
+# Kind cluster configuration for Plant Management
+# Multi-node cluster for realistic Kubernetes simulation
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      # NodePort access for the backend
+      - containerPort: 30080
+        hostPort: 30080
+        protocol: TCP
+      # NodePort access for Grafana (bonus)
+      - containerPort: 30030
+        hostPort: 30030
+        protocol: TCP
+  - role: worker
+  - role: worker

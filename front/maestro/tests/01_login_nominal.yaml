@@ -1,0 +1,34 @@
+appId: com.projet.planto_app
+---
+# TC-001 : Connexion nominale avec identifiants valides
+
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Adresse email"
+    timeout: 30000
+
+# Saisir email (eraseText puis type)
+- tapOn:
+    text: "Adresse email"
+- eraseText: 50
+- inputText: "test@test.com"
+
+# Saisir mot de passe
+- tapOn:
+    text: "Mot de passe"
+- eraseText: 50
+- inputText: "password123"
+
+# Fermer clavier + valider
+- hideKeyboard
+- tapOn:
+    text: "SE CONNECTER"
+
+# Attendre la page d'accueil
+- extendedWaitUntil:
+    visible:
+      text: "Mes plantes"
+    timeout: 15000

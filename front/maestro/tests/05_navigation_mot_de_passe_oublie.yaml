@@ -1,0 +1,26 @@
+appId: com.projet.planto_app
+---
+# TC-005 : Navigation vers la page "Mot de passe oublié" depuis la connexion
+- launchApp:
+    clearState: true
+
+- assertVisible:
+    text: "PLANTO"
+
+# Taper sur le lien "Mot de passe oublié ?"
+- tapOn:
+    text: "Mot de passe oublié ?"
+
+# Vérifier que la page de réinitialisation est chargée
+- assertVisible:
+    text: "Mot de passe oublie"
+
+# Vérifier la présence du champ email et du bouton d'envoi de code
+- assertVisible:
+    text: "Adresse email"
+
+- assertVisible:
+    text: "ENVOYER LE CODE"
+
+- assertVisible:
+    text: "Reinitialiser votre mot de passe"

@@ -1,0 +1,23 @@
+appId: com.projet.planto_app
+---
+# TC-007 : Inscription avec tous les champs vides — vérification de la validation
+- launchApp:
+    clearState: true
+
+- assertVisible:
+    text: "PLANTO"
+
+# Naviguer vers la page d'inscription
+- tapOn:
+    text: "[S'inscrire]"
+
+- assertVisible:
+    text: "Créer un compte"
+
+# Tenter de s'inscrire sans remplir aucun champ
+- tapOn:
+    text: "S'INSCRIRE"
+
+# Vérifier que le message d'erreur de validation apparaît
+- assertVisible:
+    text: "Veuillez remplir tous les champs"

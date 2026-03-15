@@ -1,0 +1,1814 @@
+{
+    "metadata": {
+        "version": "1.0",
+        "description": "300 plantes d'intérieur populaires en France",
+        "luminositeValues": [
+            "Plein soleil",
+            "Mi-ombre",
+            "Ombre"
+        ],
+        "arrosageUnit": "jours entre deux arrosages"
+    },
+    "plantes": [
+        {
+            "nomFrancais": "Monstera deliciosa",
+            "nomLatin": "Monstera deliciosa",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Ficus lyrata",
+            "nomLatin": "Ficus lyrata",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Pothos",
+            "nomLatin": "Epipremnum aureum",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Ficus elastica",
+            "nomLatin": "Ficus elastica",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Palmier d'Arec",
+            "nomLatin": "Dypsis lutescens",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Sansevieria",
+            "nomLatin": "Sansevieria trifasciata",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Aloe vera",
+            "nomLatin": "Aloe vera",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Zamioculcas",
+            "nomLatin": "Zamioculcas zamiifolia",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Spathiphyllum",
+            "nomLatin": "Spathiphyllum wallisii",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Philodendron",
+            "nomLatin": "Philodendron hederaceum",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Calathea",
+            "nomLatin": "Calathea orbifolia",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Orchidée Phalaenopsis",
+            "nomLatin": "Phalaenopsis",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Dracaena marginata",
+            "nomLatin": "Dracaena marginata",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Cactus raquette",
+            "nomLatin": "Opuntia microdasys",
+            "arrosageFrequenceJours": 21,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Fougère de Boston",
+            "nomLatin": "Nephrolepis exaltata",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Pachira",
+            "nomLatin": "Pachira aquatica",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Pilea peperomioides",
+            "nomLatin": "Pilea peperomioides",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Chlorophytum",
+            "nomLatin": "Chlorophytum comosum",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Ficus benjamina",
+            "nomLatin": "Ficus benjamina",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Crassula ovata",
+            "nomLatin": "Crassula ovata",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Alocasia",
+            "nomLatin": "Alocasia amazonica",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Croton",
+            "nomLatin": "Codiaeum variegatum",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Anthurium",
+            "nomLatin": "Anthurium andraeanum",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Yucca",
+            "nomLatin": "Yucca elephantipes",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Kentia",
+            "nomLatin": "Howea forsteriana",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Schefflera",
+            "nomLatin": "Schefflera arboricola",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Caoutchouc",
+            "nomLatin": "Ficus elastica",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Dieffenbachia",
+            "nomLatin": "Dieffenbachia seguine",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Strelitzia",
+            "nomLatin": "Strelitzia nicolai",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Philodendron monstera",
+            "nomLatin": "Monstera adansonii",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Aspidistra",
+            "nomLatin": "Aspidistra elatior",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Cactus de Noël",
+            "nomLatin": "Schlumbergera",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Palmier nain",
+            "nomLatin": "Chamaedorea elegans",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Euphorbia trigona",
+            "nomLatin": "Euphorbia trigona",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Begonia rex",
+            "nomLatin": "Begonia rex",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Peperomia",
+            "nomLatin": "Peperomia obtusifolia",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Aglaonema",
+            "nomLatin": "Aglaonema commutatum",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Syngonium",
+            "nomLatin": "Syngonium podophyllum",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Lierre",
+            "nomLatin": "Hedera helix",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Tradescantia",
+            "nomLatin": "Tradescantia zebrina",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Maranta",
+            "nomLatin": "Maranta leuconeura",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Cycas",
+            "nomLatin": "Cycas revoluta",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Ceropegia",
+            "nomLatin": "Ceropegia woodii",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Hoya",
+            "nomLatin": "Hoya carnosa",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Echeveria",
+            "nomLatin": "Echeveria elegans",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Haworthia",
+            "nomLatin": "Haworthia fasciata",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Senecio rowleyanus",
+            "nomLatin": "Senecio rowleyanus",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Rhipsalis",
+            "nomLatin": "Rhipsalis baccifera",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Ctenanthe",
+            "nomLatin": "Ctenanthe burle-marxii",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Stromanthe",
+            "nomLatin": "Stromanthe sanguinea",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Asplenium nid d'oiseau",
+            "nomLatin": "Asplenium nidus",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Adiantum",
+            "nomLatin": "Adiantum raddianum",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Polyscias",
+            "nomLatin": "Polyscias fruticosa",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Fatsia japonica",
+            "nomLatin": "Fatsia japonica",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Fittonia",
+            "nomLatin": "Fittonia albivenis",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Soleirolia",
+            "nomLatin": "Soleirolia soleirolii",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Philodendron scandens",
+            "nomLatin": "Philodendron scandens",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Philodendron selloum",
+            "nomLatin": "Philodendron bipinnatifidum",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Philodendron Pink Princess",
+            "nomLatin": "Philodendron erubescens",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Dracaena fragrans",
+            "nomLatin": "Dracaena fragrans",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Dracaena deremensis",
+            "nomLatin": "Dracaena deremensis",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Dracaena reflexa",
+            "nomLatin": "Dracaena reflexa",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Dracaena sanderiana",
+            "nomLatin": "Dracaena sanderiana",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Ficus microcarpa",
+            "nomLatin": "Ficus microcarpa",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Ficus pumila",
+            "nomLatin": "Ficus pumila",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Calathea makoyana",
+            "nomLatin": "Calathea makoyana",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Calathea lancifolia",
+            "nomLatin": "Calathea lancifolia",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Calathea medallion",
+            "nomLatin": "Calathea roseopicta",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Calathea zebrina",
+            "nomLatin": "Calathea zebrina",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Alocasia zebrina",
+            "nomLatin": "Alocasia zebrina",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Alocasia Polly",
+            "nomLatin": "Alocasia amazonica",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Alocasia black velvet",
+            "nomLatin": "Alocasia reginula",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Colocasia",
+            "nomLatin": "Colocasia esculenta",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Cyperus alternifolius",
+            "nomLatin": "Cyperus alternifolius",
+            "arrosageFrequenceJours": 2,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Papyrus",
+            "nomLatin": "Cyperus papyrus",
+            "arrosageFrequenceJours": 2,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Bambou d'intérieur",
+            "nomLatin": "Bambusa vulgaris",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Lucky bamboo",
+            "nomLatin": "Dracaena sanderiana",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Areca",
+            "nomLatin": "Chrysalidocarpus lutescens",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Livistona",
+            "nomLatin": "Livistona rotundifolia",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Phoenix roebelenii",
+            "nomLatin": "Phoenix roebelenii",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Rhapis",
+            "nomLatin": "Rhapis excelsa",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Beaucarnea",
+            "nomLatin": "Beaucarnea recurvata",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Pied d'éléphant",
+            "nomLatin": "Beaucarnea recurvata",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Cordyline",
+            "nomLatin": "Cordyline fruticosa",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Oxalis triangularis",
+            "nomLatin": "Oxalis triangularis",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Oxalis deppei",
+            "nomLatin": "Oxalis tetraphylla",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Mimosa pudica",
+            "nomLatin": "Mimosa pudica",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Tillandsia",
+            "nomLatin": "Tillandsia ionantha",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Bromelia",
+            "nomLatin": "Bromelia balansae",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Guzmania",
+            "nomLatin": "Guzmania lingulata",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Vriesea",
+            "nomLatin": "Vriesea splendens",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Neoregelia",
+            "nomLatin": "Neoregelia carolinae",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Aechmea",
+            "nomLatin": "Aechmea fasciata",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Billbergia",
+            "nomLatin": "Billbergia nutans",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Cryptanthus",
+            "nomLatin": "Cryptanthus bivittatus",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Orchidée Cymbidium",
+            "nomLatin": "Cymbidium",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Orchidée Dendrobium",
+            "nomLatin": "Dendrobium nobile",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Orchidée Cattleya",
+            "nomLatin": "Cattleya",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Orchidée Oncidium",
+            "nomLatin": "Oncidium",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Orchidée Miltonia",
+            "nomLatin": "Miltonia",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Orchidée Vanda",
+            "nomLatin": "Vanda",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Orchidée Paphiopedilum",
+            "nomLatin": "Paphiopedilum",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Orchidée Cambria",
+            "nomLatin": "Cambria",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Kalanchoe",
+            "nomLatin": "Kalanchoe blossfeldiana",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Sedum",
+            "nomLatin": "Sedum morganianum",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Sempervivum",
+            "nomLatin": "Sempervivum tectorum",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Portulacaria",
+            "nomLatin": "Portulacaria afra",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Graptopétalum",
+            "nomLatin": "Graptopetalum paraguayense",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Aeonium",
+            "nomLatin": "Aeonium arboreum",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Senecio",
+            "nomLatin": "Senecio herreianus",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Gasteria",
+            "nomLatin": "Gasteria verrucosa",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Lithops",
+            "nomLatin": "Lithops",
+            "arrosageFrequenceJours": 21,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Pleiospilos",
+            "nomLatin": "Pleiospilos nelii",
+            "arrosageFrequenceJours": 21,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Faucaria",
+            "nomLatin": "Faucaria tigrina",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Cactus San Pedro",
+            "nomLatin": "Echinopsis pachanoi",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Cactus oursin",
+            "nomLatin": "Echinopsis eyriesii",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Cactus cierge",
+            "nomLatin": "Cereus peruvianus",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Cactus coussin",
+            "nomLatin": "Mammillaria",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Cactus de Pâques",
+            "nomLatin": "Hatiora gaertneri",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Epiphyllum",
+            "nomLatin": "Epiphyllum oxypetalum",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Hylocereus",
+            "nomLatin": "Hylocereus undatus",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Aporocactus",
+            "nomLatin": "Aporocactus flagelliformis",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Gymnocalycium",
+            "nomLatin": "Gymnocalycium mihanovichii",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Rebutia",
+            "nomLatin": "Rebutia minuscula",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Notocactus",
+            "nomLatin": "Parodia magnifica",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Astrophytum",
+            "nomLatin": "Astrophytum myriostigma",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Ferocactus",
+            "nomLatin": "Ferocactus glaucescens",
+            "arrosageFrequenceJours": 21,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Echinocactus",
+            "nomLatin": "Echinocactus grusonii",
+            "arrosageFrequenceJours": 21,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Cleistocactus",
+            "nomLatin": "Cleistocactus strausii",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Pilosocereus",
+            "nomLatin": "Pilosocereus pachycladus",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Saintpaulia",
+            "nomLatin": "Saintpaulia ionantha",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Cyclamen",
+            "nomLatin": "Cyclamen persicum",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Azalée",
+            "nomLatin": "Rhododendron simsii",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Primevère",
+            "nomLatin": "Primula vulgaris",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Jacinthe",
+            "nomLatin": "Hyacinthus orientalis",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Amaryllis",
+            "nomLatin": "Hippeastrum",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Clivia",
+            "nomLatin": "Clivia miniata",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Hibiscus",
+            "nomLatin": "Hibiscus rosa-sinensis",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Jasmin",
+            "nomLatin": "Jasminum polyanthum",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Gardenia",
+            "nomLatin": "Gardenia jasminoides",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Stephanotis",
+            "nomLatin": "Stephanotis floribunda",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Dipladenia",
+            "nomLatin": "Mandevilla sanderi",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Bougainvillier",
+            "nomLatin": "Bougainvillea glabra",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Passiflore",
+            "nomLatin": "Passiflora caerulea",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Medinilla",
+            "nomLatin": "Medinilla magnifica",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Gloxinia",
+            "nomLatin": "Sinningia speciosa",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Streptocarpus",
+            "nomLatin": "Streptocarpus",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Columnea",
+            "nomLatin": "Columnea gloriosa",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Aeschynanthus",
+            "nomLatin": "Aeschynanthus radicans",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Episcia",
+            "nomLatin": "Episcia cupreata",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Exacum",
+            "nomLatin": "Exacum affine",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Camélia",
+            "nomLatin": "Camellia japonica",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Laurier rose",
+            "nomLatin": "Nerium oleander",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Olivier",
+            "nomLatin": "Olea europaea",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Citronnier",
+            "nomLatin": "Citrus limon",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Oranger",
+            "nomLatin": "Citrus sinensis",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Kumquat",
+            "nomLatin": "Fortunella margarita",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Mandarinier",
+            "nomLatin": "Citrus reticulata",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Calamondin",
+            "nomLatin": "Citrofortunella microcarpa",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Figuier",
+            "nomLatin": "Ficus carica",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Avocat",
+            "nomLatin": "Persea americana",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Manguier",
+            "nomLatin": "Mangifera indica",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Caféier",
+            "nomLatin": "Coffea arabica",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Bananier",
+            "nomLatin": "Musa acuminata",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Oiseau de Paradis",
+            "nomLatin": "Strelitzia reginae",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Gingembre",
+            "nomLatin": "Zingiber officinale",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Curcuma",
+            "nomLatin": "Curcuma longa",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Heliconia",
+            "nomLatin": "Heliconia rostrata",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Ananas",
+            "nomLatin": "Ananas comosus",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Basilic",
+            "nomLatin": "Ocimum basilicum",
+            "arrosageFrequenceJours": 2,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Menthe",
+            "nomLatin": "Mentha spicata",
+            "arrosageFrequenceJours": 2,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Persil",
+            "nomLatin": "Petroselinum crispum",
+            "arrosageFrequenceJours": 2,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Ciboulette",
+            "nomLatin": "Allium schoenoprasum",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Thym",
+            "nomLatin": "Thymus vulgaris",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Romarin",
+            "nomLatin": "Rosmarinus officinalis",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Lavande",
+            "nomLatin": "Lavandula angustifolia",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Sauge",
+            "nomLatin": "Salvia officinalis",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Coriandre",
+            "nomLatin": "Coriandrum sativum",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Laurier sauce",
+            "nomLatin": "Laurus nobilis",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Estragon",
+            "nomLatin": "Artemisia dracunculus",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Citronnelle",
+            "nomLatin": "Cymbopogon citratus",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Aloe arborescens",
+            "nomLatin": "Aloe arborescens",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Agave",
+            "nomLatin": "Agave americana",
+            "arrosageFrequenceJours": 21,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Pachypodium",
+            "nomLatin": "Pachypodium lamerei",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Adenium",
+            "nomLatin": "Adenium obesum",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Plumeria",
+            "nomLatin": "Plumeria rubra",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Euphorbia milii",
+            "nomLatin": "Euphorbia milii",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Euphorbia lactea",
+            "nomLatin": "Euphorbia lactea",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Euphorbia tirucalli",
+            "nomLatin": "Euphorbia tirucalli",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Crassula argentea",
+            "nomLatin": "Crassula argentea",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Crassula perforata",
+            "nomLatin": "Crassula perforata",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Crassula tetragona",
+            "nomLatin": "Crassula tetragona",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Kalanchoe tomentosa",
+            "nomLatin": "Kalanchoe tomentosa",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Kalanchoe daigremontiana",
+            "nomLatin": "Kalanchoe daigremontiana",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Kalanchoe beharensis",
+            "nomLatin": "Kalanchoe beharensis",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Sedum rubrotinctum",
+            "nomLatin": "Sedum rubrotinctum",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Sedum burrito",
+            "nomLatin": "Sedum burrito",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Sedum adolphii",
+            "nomLatin": "Sedum adolphii",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Echeveria pulidonis",
+            "nomLatin": "Echeveria pulidonis",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Echeveria agavoides",
+            "nomLatin": "Echeveria agavoides",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Echeveria setosa",
+            "nomLatin": "Echeveria setosa",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Graptoveria",
+            "nomLatin": "Graptoveria",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Pachyveria",
+            "nomLatin": "Pachyveria",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Cotyledon",
+            "nomLatin": "Cotyledon orbiculata",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Adromischus",
+            "nomLatin": "Adromischus cooperi",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Dudleya",
+            "nomLatin": "Dudleya brittonii",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Orostachys",
+            "nomLatin": "Orostachys spinosa",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Sinocrassula",
+            "nomLatin": "Sinocrassula yunnanensis",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Monanthes",
+            "nomLatin": "Monanthes polyphylla",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Jovellana",
+            "nomLatin": "Jovellana violacea",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Pinguicula",
+            "nomLatin": "Pinguicula moranensis",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Dionaea",
+            "nomLatin": "Dionaea muscipula",
+            "arrosageFrequenceJours": 2,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Sarracenia",
+            "nomLatin": "Sarracenia purpurea",
+            "arrosageFrequenceJours": 2,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Nepenthes",
+            "nomLatin": "Nepenthes alata",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Drosera",
+            "nomLatin": "Drosera capensis",
+            "arrosageFrequenceJours": 2,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Utricularia",
+            "nomLatin": "Utricularia sandersonii",
+            "arrosageFrequenceJours": 2,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Darlingtonia",
+            "nomLatin": "Darlingtonia californica",
+            "arrosageFrequenceJours": 2,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Cephalotus",
+            "nomLatin": "Cephalotus follicularis",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Bonsai ficus",
+            "nomLatin": "Ficus retusa",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Bonsai orme de Chine",
+            "nomLatin": "Ulmus parvifolia",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Bonsai carmona",
+            "nomLatin": "Carmona microphylla",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Bonsai serissa",
+            "nomLatin": "Serissa foetida",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Bonsai sageretia",
+            "nomLatin": "Sageretia theezans",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Bonsai ligustrum",
+            "nomLatin": "Ligustrum sinense",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Bonsai podocarpus",
+            "nomLatin": "Podocarpus macrophyllus",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Norfolk Island Pine",
+            "nomLatin": "Araucaria heterophylla",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Araucaria",
+            "nomLatin": "Araucaria araucana",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Cyprès d'intérieur",
+            "nomLatin": "Cupressus macrocarpa",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Podocarpus",
+            "nomLatin": "Podocarpus macrophyllus",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Selaginella",
+            "nomLatin": "Selaginella kraussiana",
+            "arrosageFrequenceJours": 2,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Pellaea",
+            "nomLatin": "Pellaea rotundifolia",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Pteris",
+            "nomLatin": "Pteris cretica",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Platycerium",
+            "nomLatin": "Platycerium bifurcatum",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Davallia",
+            "nomLatin": "Davallia fejeensis",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Cyrtomium",
+            "nomLatin": "Cyrtomium falcatum",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Polypodium",
+            "nomLatin": "Polypodium aureum",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Blechnum",
+            "nomLatin": "Blechnum gibbum",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Microsorium",
+            "nomLatin": "Microsorum diversifolium",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Phlebodium",
+            "nomLatin": "Phlebodium aureum",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Pépéromie watermelon",
+            "nomLatin": "Peperomia argyreia",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Pépéromie caperata",
+            "nomLatin": "Peperomia caperata",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Pépéromie rotundifolia",
+            "nomLatin": "Peperomia rotundifolia",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Pépéromie polybotrya",
+            "nomLatin": "Peperomia polybotrya",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Pilea glauca",
+            "nomLatin": "Pilea glauca",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Pilea involucrata",
+            "nomLatin": "Pilea involucrata",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Pilea cadierei",
+            "nomLatin": "Pilea cadierei",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Begonia maculata",
+            "nomLatin": "Begonia maculata",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Begonia tamaya",
+            "nomLatin": "Begonia tamaya",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Begonia argentina",
+            "nomLatin": "Begonia grandis",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Begonia bowerae",
+            "nomLatin": "Begonia bowerae",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Coleus",
+            "nomLatin": "Coleus scutellarioides",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Hypoestes",
+            "nomLatin": "Hypoestes phyllostachya",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Iresine",
+            "nomLatin": "Iresine herbstii",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Alternanthera",
+            "nomLatin": "Alternanthera ficoidea",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Plectranthus",
+            "nomLatin": "Plectranthus australis",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Gynura",
+            "nomLatin": "Gynura aurantiaca",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Setcreasea",
+            "nomLatin": "Tradescantia pallida",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Plein soleil"
+        },
+        {
+            "nomFrancais": "Callisia",
+            "nomLatin": "Callisia repens",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Zebrina",
+            "nomLatin": "Tradescantia zebrina",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Rhoeo",
+            "nomLatin": "Tradescantia spathacea",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Dichorisandra",
+            "nomLatin": "Dichorisandra thyrsiflora",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Cissus rhombifolia",
+            "nomLatin": "Cissus rhombifolia",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Tetrastigma",
+            "nomLatin": "Tetrastigma voinierianum",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Philodendron verrucosum",
+            "nomLatin": "Philodendron verrucosum",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Philodendron gloriosum",
+            "nomLatin": "Philodendron gloriosum",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Philodendron xanadu",
+            "nomLatin": "Thaumatophyllum xanadu",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Philodendron birkin",
+            "nomLatin": "Philodendron birkin",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Philodendron micans",
+            "nomLatin": "Philodendron micans",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Philodendron brasil",
+            "nomLatin": "Philodendron hederaceum brasil",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Anthurium clarinervium",
+            "nomLatin": "Anthurium clarinervium",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Anthurium crystallinum",
+            "nomLatin": "Anthurium crystallinum",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Anthurium veitchii",
+            "nomLatin": "Anthurium veitchii",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Scindapsus pictus",
+            "nomLatin": "Scindapsus pictus",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Epipremnum pinnatum",
+            "nomLatin": "Epipremnum pinnatum",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Rhaphidophora tetrasperma",
+            "nomLatin": "Rhaphidophora tetrasperma",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Syngonium albo",
+            "nomLatin": "Syngonium albo-variegatum",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Syngonium pink",
+            "nomLatin": "Syngonium podophyllum pink",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Caladium",
+            "nomLatin": "Caladium bicolor",
+            "arrosageFrequenceJours": 3,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Xanthosoma",
+            "nomLatin": "Xanthosoma sagittifolium",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Spathiphyllum sensation",
+            "nomLatin": "Spathiphyllum sensation",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Zantedeschia",
+            "nomLatin": "Zantedeschia aethiopica",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Pistia",
+            "nomLatin": "Pistia stratiotes",
+            "arrosageFrequenceJours": 1,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Lemna",
+            "nomLatin": "Lemna minor",
+            "arrosageFrequenceJours": 1,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Acorus",
+            "nomLatin": "Acorus gramineus",
+            "arrosageFrequenceJours": 2,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Bambou sacré",
+            "nomLatin": "Nandina domestica",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Asparagus plumosus",
+            "nomLatin": "Asparagus setaceus",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Asparagus densiflorus",
+            "nomLatin": "Asparagus densiflorus",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Ruscus",
+            "nomLatin": "Ruscus aculeatus",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Ophiopogon",
+            "nomLatin": "Ophiopogon japonicus",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Liriope",
+            "nomLatin": "Liriope muscari",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Hoya kerrii",
+            "nomLatin": "Hoya kerrii",
+            "arrosageFrequenceJours": 14,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Hoya linearis",
+            "nomLatin": "Hoya linearis",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Hoya compacta",
+            "nomLatin": "Hoya compacta",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Ficus binnendijkii",
+            "nomLatin": "Ficus binnendijkii",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Ficus alii",
+            "nomLatin": "Ficus maclellandii",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Calathea white fusion",
+            "nomLatin": "Calathea lietzei",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Calathea rufibarba",
+            "nomLatin": "Calathea rufibarba",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Calathea ornata",
+            "nomLatin": "Calathea ornata",
+            "arrosageFrequenceJours": 5,
+            "luminosite": "Ombre"
+        },
+        {
+            "nomFrancais": "Peperomia prostrata",
+            "nomLatin": "Peperomia prostrata",
+            "arrosageFrequenceJours": 10,
+            "luminosite": "Mi-ombre"
+        },
+        {
+            "nomFrancais": "Scindapsus treubii",
+            "nomLatin": "Scindapsus treubii",
+            "arrosageFrequenceJours": 7,
+            "luminosite": "Mi-ombre"
+        }
+    ]
+}

@@ -1,0 +1,49 @@
+appId: com.projet.planto_app
+---
+# TC-011 : Navigation vers la page Profil et vérification des éléments
+- launchApp:
+    clearState: true
+
+- assertVisible:
+    text: "PLANTO"
+
+# Se connecter
+- tapOn:
+    text: "Adresse email"
+- inputText: "test@test.com"
+
+- tapOn:
+    text: "Mot de passe"
+- inputText: "password123"
+
+- tapOn:
+    text: "SE CONNECTER"
+
+# Attendre la page d'accueil
+- assertVisible:
+    text: "PLANTO"
+
+# Naviguer vers le Profil
+- tapOn:
+    text: "Profil"
+
+# Vérifier le titre de la page
+- assertVisible:
+    text: "Mon Profil"
+
+# Vérifier les sections principales
+- assertVisible:
+    text: "Informations"
+
+- assertVisible:
+    text: "Parametres"
+    optional: true
+
+# Faire défiler pour vérifier la section compte
+- scrollUntilVisible:
+    element:
+      text: "Gestion du compte"
+    direction: DOWN
+
+- assertVisible:
+    text: "Gestion du compte"

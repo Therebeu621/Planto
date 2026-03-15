@@ -1,0 +1,198 @@
+{{- if .Values.metrics.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plant-backend.fullname" . }}-dashboards
+  labels:
+    grafana_dashboard: "1"
+    {{- include "plant-backend.labels" . | nindent 4 }}
+data:
+  plant-backend-monitoring.json: |-
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "links": [],
+      "panels": [
+        {
+          "title": "HTTP Request Rate (req/s)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "targets": [
+            {
+              "expr": "sum(rate(http_server_requests_seconds_count{job=\"plant-backend\"}[5m])) by (method, uri)",
+              "legendFormat": "{{ "{{" }}method{{ "}}" }} {{ "{{" }}uri{{ "}}" }}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "reqps" },
+            "overrides": []
+          }
+        },
+        {
+          "title": "HTTP Response Time (p95)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"plant-backend\"}[5m])) by (le, uri))",
+              "legendFormat": "p95 {{ "{{" }}uri{{ "}}" }}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "s" },
+            "overrides": []
+          }
+        },
+        {
+          "title": "HTTP Error Rate (5xx)",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 },
+          "targets": [
+            {
+              "expr": "sum(rate(http_server_requests_seconds_count{job=\"plant-backend\",status=~\"5..\"}[5m]))",
+              "legendFormat": "5xx/s"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "reqps", "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 0.1 }] } },
+            "overrides": []
+          }
+        },
+        {
+          "title": "Pod CPU Usage",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+          "targets": [
+            {
+              "expr": "sum(rate(container_cpu_usage_seconds_total{pod=~\"plant-backend.*\",container!=\"\"}[5m])) by (pod)",
+              "legendFormat": "{{ "{{" }}pod{{ "}}" }}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "percentunit" },
+            "overrides": []
+          }
+        },
+        {
+          "title": "Pod Memory Usage",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+          "targets": [
+            {
+              "expr": "sum(container_memory_working_set_bytes{pod=~\"plant-backend.*\",container!=\"\"}) by (pod)",
+              "legendFormat": "{{ "{{" }}pod{{ "}}" }}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "bytes" },
+            "overrides": []
+          }
+        },
+        {
+          "title": "Pod Restarts",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 8 },
+          "targets": [
+            {
+              "expr": "sum(kube_pod_container_status_restarts_total{pod=~\"plant-backend.*\"})",
+              "legendFormat": "restarts"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 5 }] } },
+            "overrides": []
+          }
+        },
+        {
+          "title": "JVM Heap Used",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+          "targets": [
+            {
+              "expr": "sum(jvm_memory_used_bytes{area=\"heap\",job=\"plant-backend\"}) by (pod)",
+              "legendFormat": "{{ "{{" }}pod{{ "}}" }}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "bytes" },
+            "overrides": []
+          }
+        },
+        {
+          "title": "Active HTTP Connections",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+          "targets": [
+            {
+              "expr": "sum(http_server_active_requests{job=\"plant-backend\"}) by (pod)",
+              "legendFormat": "{{ "{{" }}pod{{ "}}" }}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "short" },
+            "overrides": []
+          }
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": ["plant-backend", "monitoring"],
+      "templating": { "list": [] },
+      "time": { "from": "now-1h", "to": "now" },
+      "title": "Plant Backend - Monitoring",
+      "uid": "plant-backend-monitoring"
+    }
+  plant-backend-logs.json: |-
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "links": [],
+      "panels": [
+        {
+          "title": "Log Stream (all pods)",
+          "type": "logs",
+          "gridPos": { "h": 12, "w": 24, "x": 0, "y": 0 },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "{app_kubernetes_io_name=\"plant-backend\"}",
+              "legendFormat": ""
+            }
+          ]
+        },
+        {
+          "title": "Log Volume by Level",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "sum(count_over_time({app_kubernetes_io_name=\"plant-backend\"} | json | level != \"\" [5m])) by (level)",
+              "legendFormat": "{{ "{{" }}level{{ "}}" }}"
+            }
+          ]
+        },
+        {
+          "title": "Error Logs (5xx + exceptions)",
+          "type": "logs",
+          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 20 },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "loki" },
+              "expr": "{app_kubernetes_io_name=\"plant-backend\"} |~ \"ERROR|WARN|Exception|5[0-9]{2}\"",
+              "legendFormat": ""
+            }
+          ]
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": ["plant-backend", "logs"],
+      "templating": { "list": [] },
+      "time": { "from": "now-1h", "to": "now" },
+      "title": "Plant Backend - Logs",
+      "uid": "plant-backend-logs"
+    }
+{{- end }}

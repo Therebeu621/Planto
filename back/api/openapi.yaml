@@ -1,0 +1,967 @@
+openapi: 3.0.3
+info:
+  title: Plant Management API
+  description: API REST pour la gestion de plantes domestiques
+  version: 1.0.0
+  contact:
+    name: Plant Team
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Development (Quarkus local)
+  # a remplacer par l'URL du cluster Kubernetes université ?
+  - url: http://plant-backend.etu-k8s.lan/api/v1
+    description: Production (Kubernetes cluster)
+
+tags:
+  - name: Auth
+    description: Authentification et gestion utilisateur
+  - name: House
+    description: Gestion des maisons/familles
+  - name: Room
+    description: Gestion des pièces
+  - name: Species
+    description: Catalogue de plantes (via Trefle.io)
+  - name: Plant
+    description: Gestion du jardin personnel
+  - name: CareLog
+    description: Historique des soins
+  - name: Notification
+    description: Notifications in-app
+  - name: MCP
+    description: Integration LLM via Goose/Mistral (OBLIGATOIRE)
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ==================== AUTH ====================
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Créer un nouveau compte
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Compte créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Données invalides
+        '409':
+          description: Email déjà utilisé
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Se connecter
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Identifiants invalides
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Rafraîchir le token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token rafraîchi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Token invalide
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Obtenir le profil courant
+      responses:
+        '200':
+          description: Profil utilisateur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  # ==================== HOUSE ====================
+  /houses:
+    post:
+      tags: [House]
+      summary: Créer une maison
+      description: L'utilisateur devient OWNER
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHouseRequest'
+      responses:
+        '201':
+          description: Maison créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HouseResponse'
+        '400':
+          description: Utilisateur a déjà une maison
+
+  /houses/join:
+    post:
+      tags: [House]
+      summary: Rejoindre une maison
+      description: L'utilisateur devient MEMBER
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [inviteCode]
+              properties:
+                inviteCode:
+                  type: string
+                  example: "ABC12345"
+      responses:
+        '200':
+          description: Maison rejointe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HouseResponse'
+        '400':
+          description: Utilisateur a déjà une maison
+        '404':
+          description: Code invalide
+
+  /houses/me:
+    get:
+      tags: [House]
+      summary: Obtenir ma maison
+      responses:
+        '200':
+          description: Détails de la maison
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HouseDetailResponse'
+        '404':
+          description: Pas de maison
+
+  /houses/leave:
+    post:
+      tags: [House]
+      summary: Quitter la maison
+      description: OWNER ne peut pas quitter (doit supprimer)
+      responses:
+        '204':
+          description: Maison quittée
+        '400':
+          description: OWNER ne peut pas quitter
+
+  # ==================== ROOMS ====================
+  /rooms:
+    get:
+      tags: [Room]
+      summary: Lister les pièces de ma maison
+      responses:
+        '200':
+          description: Liste des pièces
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoomResponse'
+    post:
+      tags: [Room]
+      summary: Créer une pièce
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoomRequest'
+      responses:
+        '201':
+          description: Pièce créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomResponse'
+
+  /rooms/{id}:
+    get:
+      tags: [Room]
+      summary: Détails d'une pièce
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Détails de la pièce
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomDetailResponse'
+    patch:
+      tags: [Room]
+      summary: Modifier une pièce
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoomRequest'
+      responses:
+        '200':
+          description: Pièce modifiée
+    delete:
+      tags: [Room]
+      summary: Supprimer une pièce
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '204':
+          description: Pièce supprimée
+
+  # ==================== SPECIES ====================
+  /species/search:
+    get:
+      tags: [Species]
+      summary: Rechercher des espèces
+      description: Recherche dans le catalogue via Trefle.io (avec cache)
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+          description: Terme de recherche
+      responses:
+        '200':
+          description: Liste des espèces
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SpeciesResponse'
+
+  /species/{id}:
+    get:
+      tags: [Species]
+      summary: Détails d'une espèce
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Détails de l'espèce
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeciesDetailResponse'
+
+  # ==================== PLANTS ====================
+  /plants:
+    get:
+      tags: [Plant]
+      summary: Lister mes plantes
+      parameters:
+        - name: roomId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filtrer par pièce
+      responses:
+        '200':
+          description: Liste des plantes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlantResponse'
+    post:
+      tags: [Plant]
+      summary: Ajouter une plante
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePlantRequest'
+      responses:
+        '201':
+          description: Plante ajoutée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlantResponse'
+
+  /plants/{id}:
+    get:
+      tags: [Plant]
+      summary: Détails d'une plante
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Détails de la plante
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlantDetailResponse'
+    patch:
+      tags: [Plant]
+      summary: Modifier une plante
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePlantRequest'
+      responses:
+        '200':
+          description: Plante modifiée
+    delete:
+      tags: [Plant]
+      summary: Supprimer une plante
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '204':
+          description: Plante supprimée
+
+  /plants/{id}/photo:
+    post:
+      tags: [Plant]
+      summary: Uploader une photo
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Photo uploadée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  photoUrl:
+                    type: string
+
+  /plants/{id}/water:
+    post:
+      tags: [Plant]
+      summary: Marquer comme arrosée
+      description: Raccourci pour créer un CareLog WATERING
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Arrosage enregistré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlantResponse'
+
+  # ==================== CARE LOGS ====================
+  /plants/{plantId}/care-logs:
+    get:
+      tags: [CareLog]
+      summary: Historique des soins
+      parameters:
+        - name: plantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Liste des soins
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CareLogResponse'
+    post:
+      tags: [CareLog]
+      summary: Enregistrer un soin
+      parameters:
+        - name: plantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCareLogRequest'
+      responses:
+        '201':
+          description: Soin enregistré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CareLogResponse'
+
+  # ==================== NOTIFICATIONS ====================
+  /notifications:
+    get:
+      tags: [Notification]
+      summary: Mes notifications
+      parameters:
+        - name: unreadOnly
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Liste des notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NotificationResponse'
+
+  /notifications/{id}/read:
+    post:
+      tags: [Notification]
+      summary: Marquer comme lue
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '204':
+          description: Notification marquée comme lue
+
+  /notifications/read-all:
+    post:
+      tags: [Notification]
+      summary: Tout marquer comme lu
+      responses:
+        '204':
+          description: Toutes marquées comme lues
+
+  # ==================== MCP (OBLIGATOIRE) ====================
+  /mcp/tools:
+    post:
+      tags: [MCP]
+      summary: Exécuter un outil MCP
+      description: |
+        Endpoint pour l'intégration LLM via Goose/Mistral.
+        Permet de créer/lister des plantes via commandes naturelles.
+      security:
+        - mcpApiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/McpToolRequest'
+            examples:
+              search:
+                summary: Rechercher des plantes
+                value:
+                  tool: "search_plants"
+                  params:
+                    query: "rose"
+              add:
+                summary: Ajouter une plante
+                value:
+                  tool: "add_plant"
+                  params:
+                    speciesName: "Rose"
+                    roomName: "Salon"
+                    nickname: "Belle"
+              list:
+                summary: Lister les plantes
+                value:
+                  tool: "list_plants"
+                  params: {}
+              water:
+                summary: Arroser une plante
+                value:
+                  tool: "water_plant"
+                  params:
+                    plantName: "Belle"
+      responses:
+        '200':
+          description: Outil exécuté avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/McpToolResponse'
+        '400':
+          description: Outil inconnu ou paramètres invalides
+        '401':
+          description: API Key MCP invalide
+        '404':
+          description: Ressource non trouvée (plante, espèce, etc.)
+
+  /mcp/schema:
+    get:
+      tags: [MCP]
+      summary: Obtenir le schéma des outils MCP
+      description: |
+        Retourne la liste des outils disponibles avec leurs paramètres.
+        Utilisé par Goose pour configurer l'intégration.
+      security:
+        - mcpApiKey: []
+      responses:
+        '200':
+          description: Schéma des outils MCP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/McpSchema'
+        '401':
+          description: API Key MCP invalide
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    mcpApiKey:
+      type: apiKey
+      in: header
+      name: X-MCP-API-Key
+      description: API Key pour l'accès MCP (Goose/Mistral)
+
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    # ===== AUTH =====
+    RegisterRequest:
+      type: object
+      required: [email, password, displayName]
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          minLength: 8
+          example: "securepassword123"
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "John Doe"
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+          description: Secondes avant expiration
+        user:
+          $ref: '#/components/schemas/UserResponse'
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        displayName:
+          type: string
+        role:
+          type: string
+          enum: [OWNER, MEMBER]
+        houseId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    # ===== HOUSE =====
+    CreateHouseRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+
+    HouseResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        inviteCode:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    HouseDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/HouseResponse'
+        - type: object
+          properties:
+            members:
+              type: array
+              items:
+                $ref: '#/components/schemas/UserResponse'
+            roomCount:
+              type: integer
+            plantCount:
+              type: integer
+
+    # ===== ROOM =====
+    CreateRoomRequest:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+        type:
+          type: string
+          enum: [LIVING_ROOM, BEDROOM, BALCONY, GARDEN, KITCHEN, BATHROOM, OFFICE, OTHER]
+
+    UpdateRoomRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [LIVING_ROOM, BEDROOM, BALCONY, GARDEN, KITCHEN, BATHROOM, OFFICE, OTHER]
+
+    RoomResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+        plantCount:
+          type: integer
+
+    RoomDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/RoomResponse'
+        - type: object
+          properties:
+            plants:
+              type: array
+              items:
+                $ref: '#/components/schemas/PlantResponse'
+
+    # ===== SPECIES =====
+    SpeciesResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        trefleId:
+          type: integer
+        commonName:
+          type: string
+        scientificName:
+          type: string
+        family:
+          type: string
+        imageUrl:
+          type: string
+
+    SpeciesDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/SpeciesResponse'
+        - type: object
+          properties:
+            genus:
+              type: string
+            year:
+              type: integer
+            author:
+              type: string
+            bibliography:
+              type: string
+            familyCommonName:
+              type: string
+
+    # ===== PLANT =====
+    CreatePlantRequest:
+      type: object
+      required: [speciesId]
+      properties:
+        speciesId:
+          type: string
+          format: uuid
+        roomId:
+          type: string
+          format: uuid
+        nickname:
+          type: string
+          maxLength: 100
+        wateringIntervalDays:
+          type: integer
+          minimum: 1
+          maximum: 365
+          default: 7
+
+    UpdatePlantRequest:
+      type: object
+      properties:
+        roomId:
+          type: string
+          format: uuid
+          nullable: true
+        nickname:
+          type: string
+        wateringIntervalDays:
+          type: integer
+        notes:
+          type: string
+
+    PlantResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nickname:
+          type: string
+        species:
+          $ref: '#/components/schemas/SpeciesResponse'
+        room:
+          $ref: '#/components/schemas/RoomResponse'
+        photoUrl:
+          type: string
+        lastWatered:
+          type: string
+          format: date-time
+        nextWatering:
+          type: string
+          format: date-time
+        needsWater:
+          type: boolean
+        acquiredAt:
+          type: string
+          format: date
+
+    PlantDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/PlantResponse'
+        - type: object
+          properties:
+            wateringIntervalDays:
+              type: integer
+            notes:
+              type: string
+            createdAt:
+              type: string
+              format: date-time
+            recentCareLogs:
+              type: array
+              items:
+                $ref: '#/components/schemas/CareLogResponse'
+
+    # ===== CARE LOG =====
+    CreateCareLogRequest:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [WATERING, FERTILIZING, REPOTTING, PRUNING, TREATMENT, NOTE]
+        notes:
+          type: string
+
+    CareLogResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        action:
+          type: string
+        notes:
+          type: string
+        performedBy:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            displayName:
+              type: string
+        performedAt:
+          type: string
+          format: date-time
+
+    # ===== NOTIFICATION =====
+    NotificationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [WATERING_REMINDER, CARE_REMINDER, PLANT_ADDED, MEMBER_JOINED]
+        message:
+          type: string
+        read:
+          type: boolean
+        plantId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    # ===== MCP (OBLIGATOIRE) =====
+    McpToolRequest:
+      type: object
+      required: [tool]
+      properties:
+        tool:
+          type: string
+          enum: [search_plants, add_plant, list_plants, water_plant]
+          description: Nom de l'outil à exécuter
+        params:
+          type: object
+          additionalProperties:
+            type: string
+          description: Paramètres de l'outil (clé-valeur)
+          example:
+            speciesName: "Rose"
+            roomName: "Salon"
+
+    McpToolResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+        message:
+          type: string
+          description: Message de résultat lisible
+        data:
+          type: object
+          description: Données retournées (varie selon l'outil)
+          additionalProperties: true
+
+    McpSchema:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Plant Management MCP"
+        version:
+          type: string
+          example: "1.0.0"
+        tools:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              parameters:
+                type: object
+                additionalProperties:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    required:
+                      type: boolean
+                    description:
+                      type: string

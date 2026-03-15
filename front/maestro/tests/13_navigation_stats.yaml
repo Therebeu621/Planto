@@ -1,0 +1,39 @@
+appId: com.projet.planto_app
+---
+# TC-013 : Navigation vers la page Statistiques et vérification de l'affichage
+- launchApp:
+    clearState: true
+
+- assertVisible:
+    text: "PLANTO"
+
+# Se connecter
+- tapOn:
+    text: "Adresse email"
+- inputText: "test@test.com"
+
+- tapOn:
+    text: "Mot de passe"
+- inputText: "password123"
+
+- tapOn:
+    text: "SE CONNECTER"
+
+# Attendre la page d'accueil
+- assertVisible:
+    text: "PLANTO"
+
+# Naviguer vers Stats via la barre de navigation du bas
+- tapOn:
+    text: "Stats"
+
+# Vérifier le titre de la page
+- assertVisible:
+    text: "Statistiques"
+
+# Vérifier les onglets Dashboard et Retrospective
+- assertVisible:
+    text: "Dashboard"
+
+- assertVisible:
+    text: "Retrospective"

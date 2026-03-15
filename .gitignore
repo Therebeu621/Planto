@@ -1,0 +1,42 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+**/node_modules/
+
+# Windows metadata copied from downloads
+*.Zone.Identifier
+
+# Secrets / local env
+**/.env
+**/.env.*
+!**/.env.example
+back/src/main/resources/privateKey.pem
+back/src/main/resources/publicKey.pem
+front/android/app/google-services.json
+
+# Java / Maven
+**/target/
+
+# Flutter / mobile generated files
+**/.dart_tool/
+**/build/
+**/linux/flutter/ephemeral/
+**/windows/flutter/ephemeral/
+**/macos/Flutter/ephemeral/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/android/local.properties
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+
+# Portfolio-only exclusions
+RECAP_*.md
+back/POINT_*.md
+back/SUJET_*.pdf
+back/Sujet_projet_M2_*.pdf
+back/gitlab-issues*.csv
+back/WORKFLOW_GUIDE.md
+back/plant-management-guide*.md
+back/.claude/

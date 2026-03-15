@@ -1,0 +1,56 @@
+appId: com.projet.planto_app
+---
+# TC-010 : Déconnexion depuis la page Profil
+- launchApp:
+    clearState: true
+
+- assertVisible:
+    text: "PLANTO"
+
+# Se connecter
+- tapOn:
+    text: "Adresse email"
+- inputText: "test@test.com"
+
+- tapOn:
+    text: "Mot de passe"
+- inputText: "password123"
+
+- tapOn:
+    text: "SE CONNECTER"
+
+# Attendre la page d'accueil
+- assertVisible:
+    text: "PLANTO"
+
+# Naviguer vers la page Profil via la barre de navigation
+- tapOn:
+    text: "Profil"
+
+# Vérifier que la page Profil est chargée
+- assertVisible:
+    text: "Mon Profil"
+
+# Faire défiler vers le bas pour trouver la section "Gestion du compte"
+- scrollUntilVisible:
+    element:
+      text: "Deconnexion"
+    direction: DOWN
+
+# Taper sur le bouton de déconnexion
+- tapOn:
+    text: "Deconnexion"
+
+# Confirmer la déconnexion dans la boîte de dialogue
+- assertVisible:
+    text: "Voulez-vous vraiment vous deconnecter ?"
+
+- tapOn:
+    text: "Deconnexion"
+
+# Vérifier le retour à la page de connexion
+- assertVisible:
+    text: "PLANTO"
+
+- assertVisible:
+    text: "SE CONNECTER"

@@ -1,0 +1,15 @@
+services:
+  planto-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: planto-frontend
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    networks:
+      - planto-network
+
+networks:
+  planto-network:
+    driver: bridge

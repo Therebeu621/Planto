@@ -1,0 +1,90 @@
+# ==============================================
+# Plant Backend — Helm Values
+# ==============================================
+
+# -- Docker image configuration
+image:
+  repository: backend
+  tag: latest-jvm
+  pullPolicy: IfNotPresent
+
+# -- Number of backend replicas
+replicaCount: 2
+
+# -- PostgreSQL connection
+postgresql:
+  host: plant-db-postgresql
+  port: 5432
+  database: plant_db
+  username: plant_user
+  password: plant_pass
+
+# -- JWT Security
+security:
+  jwtIssuer: plant-management
+  accessTokenExpiration: "3600"
+  refreshTokenExpiration: "604800"
+
+# -- MCP (Model Context Protocol)
+mcp:
+  apiKey: ""
+  defaultUserEmail: ""
+
+# -- External APIs
+apis:
+  trefleToken: ""
+  perenualKey: ""
+  geminiKey: ""
+  openweatherKey: ""
+  openweatherDefaultCity: "Paris"
+
+# -- Email (SMTP)
+mail:
+  from: ""
+  host: ""
+  port: "587"
+  startTls: "REQUIRED"
+  username: ""
+  password: ""
+
+# -- Firebase
+firebase:
+  existingSecret: ""
+  secretKey: "firebase-service-account.json"
+  mountPath: "/var/run/secrets/firebase"
+  credentialsPath: "/var/run/secrets/firebase/firebase-service-account.json"
+
+# -- Application settings
+app:
+  photosPath: /app/photos
+  photosMaxSizeMb: "5"
+  environment: production
+
+# -- Kubernetes Service
+service:
+  type: ClusterIP
+  port: 8080
+
+# -- Resource limits
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "250m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+# -- Metrics / Monitoring
+metrics:
+  enabled: true
+
+# -- Health check probes
+probes:
+  liveness:
+    path: /q/health/live
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readiness:
+    path: /q/health/ready
+    initialDelaySeconds: 15
+    periodSeconds: 5

@@ -1,0 +1,43 @@
+appId: com.projet.planto_app
+---
+# TC-009 : Vérification des éléments de la page d'accueil après connexion
+- launchApp:
+    clearState: true
+
+- assertVisible:
+    text: "PLANTO"
+
+# Se connecter avec des identifiants valides
+- tapOn:
+    text: "Adresse email"
+- inputText: "test@test.com"
+
+- tapOn:
+    text: "Mot de passe"
+- inputText: "password123"
+
+- tapOn:
+    text: "SE CONNECTER"
+
+# Attendre le chargement de la page d'accueil
+- assertVisible:
+    text: "PLANTO"
+
+# Vérifier la barre de navigation du bas
+- assertVisible:
+    text: "Home"
+
+- assertVisible:
+    text: "Profil"
+
+- assertVisible:
+    text: "Stats"
+
+# Vérifier la présence de la section maisons
+- assertVisible:
+    text: "Mes Maisons"
+    optional: true
+
+- assertVisible:
+    text: "Ma Maison"
+    optional: true

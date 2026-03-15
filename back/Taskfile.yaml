@@ -1,0 +1,182 @@
+# ==============================================
+# Taskfile — Plant Management Backend
+# DevOps automation for CI/CD and Kubernetes
+# ==============================================
+# Prerequisites: docker, kind, kubectl, helm, task
+# Usage: task <task-name>
+# ==============================================
+
+version: '3'
+
+vars:
+  # Cluster
+  KIND_CLUSTER_NAME: plant-cluster
+  KIND_K8S_VERSION: '1.34.0'
+  KIND_IMAGE: 'kindest/node:v{{.KIND_K8S_VERSION}}'
+
+  # Docker images
+  IMAGE_NAME: backend
+  GIT_SHA:
+    sh: git rev-parse --short HEAD
+
+  # Helm
+  BACKEND_RELEASE: plant-backend
+  DB_RELEASE: plant-db
+  HELM_BACKEND_CHART: ./helm/backend
+  HELM_NAMESPACE: default
+
+  # PostgreSQL (Bitnami)
+  DB_USER: plant_user
+  DB_PASSWORD: plant_pass
+  DB_NAME: plant_db
+
+tasks:
+  # ============================================
+  # Kind Cluster Management
+  # ============================================
+  create-kind:
+    desc: Create a kind cluster with a dedicated name and a specific Kubernetes version (eg. 1.34.0)
+    cmds:
+      - |
+        kind create cluster \
+          --name {{.KIND_CLUSTER_NAME}} \
+          --image {{.KIND_IMAGE}} \
+          --config kind-config.yaml \
+          --wait 60s
+      - kubectl cluster-info --context kind-{{.KIND_CLUSTER_NAME}}
+    status:
+      - kind get clusters | grep -q {{.KIND_CLUSTER_NAME}}
+
+  delete-kind:
+    desc: Delete the kind cluster
+    cmds:
+      - kind delete cluster --name {{.KIND_CLUSTER_NAME}}
+
+  # ============================================
+  # Docker Image Builds
+  # ============================================
+  build-image-jvm:
+    desc: Build the application Docker image using JVM
+    cmds:
+      - ./mvnw package -DskipTests -Dquarkus.package.jar.type=fast-jar
+      - |
+        docker build \
+          -f src/main/docker/Dockerfile.jvm \
+          -t {{.IMAGE_NAME}}:{{.GIT_SHA}}-jvm \
+          .
+    sources:
+      - src/**/*.java
+      - pom.xml
+
+  build-image-native:
+    desc: Build the application Docker image using native
+    cmds:
+      - ./mvnw package -Dnative -DskipTests -Dquarkus.native.container-build=true
+      - |
+        docker build \
+          -f src/main/docker/Dockerfile.native \
+          -t {{.IMAGE_NAME}}:{{.GIT_SHA}}-native \
+          .
+    sources:
+      - src/**/*.java
+      - pom.xml
+
+  build-image:
+    desc: Build the application Docker images
+    deps:
+      - build-image-jvm
+      - build-image-native
+
+  # ============================================
+  # CI-specific builds (Kaniko, no Docker daemon)
+  # ============================================
+  build-image-jvm-ci:
+    desc: Build JVM Docker image artifact for CI (Kaniko)
+    cmds:
+      - ./ci/build-image.sh jvm {{.GIT_SHA}}
+
+  build-image-native-ci:
+    desc: Build native Docker image artifact for CI (Kaniko)
+    cmds:
+      - ./ci/build-image.sh native {{.GIT_SHA}}
+
+  # ============================================
+  # Helm Deployments
+  # ============================================
+  install-db:
+    desc: Install the PostgreSQL database using Helm
+    cmds:
+      - |
+        helm upgrade --install {{.DB_RELEASE}} oci://registry-1.docker.io/bitnamicharts/postgresql \
+          --set auth.username={{.DB_USER}} \
+          --set auth.password={{.DB_PASSWORD}} \
+          --set auth.database={{.DB_NAME}} \
+          --set primary.persistence.enabled=true \
+          --set primary.persistence.size=1Gi \
+          --wait --timeout 120s
+
+  install-app:
+    desc: Install the application using Helm
+    deps:
+      - build-image
+    cmds:
+      # Load Docker images into Kind cluster
+      - kind load docker-image {{.IMAGE_NAME}}:{{.GIT_SHA}}-jvm --name {{.KIND_CLUSTER_NAME}}
+      - kind load docker-image {{.IMAGE_NAME}}:{{.GIT_SHA}}-native --name {{.KIND_CLUSTER_NAME}}
+      # Install/upgrade with Helm
+      - |
+        helm upgrade --install {{.BACKEND_RELEASE}} {{.HELM_BACKEND_CHART}} \
+          --set image.repository={{.IMAGE_NAME}} \
+          --set image.tag={{.GIT_SHA}}-jvm \
+          --set postgresql.host={{.DB_RELEASE}}-postgresql \
+          --set postgresql.port=5432 \
+          --set postgresql.database={{.DB_NAME}} \
+          --set postgresql.username={{.DB_USER}} \
+          --set postgresql.password={{.DB_PASSWORD}} \
+          --wait --timeout 120s
+
+  install-all:
+    desc: Install every Helm releases in the right order
+    cmds:
+      - task: install-db
+      - task: install-app
+
+  # ============================================
+  # Observability (bonus)
+  # ============================================
+  install-monitoring:
+    desc: Install Prometheus and Grafana monitoring stack
+    cmds:
+      - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+      - helm repo update
+      - |
+        helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
+          --set grafana.service.type=NodePort \
+          --set grafana.service.nodePort=30030 \
+          --set grafana.adminPassword=admin \
+          --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false \
+          --set alertmanager.enabled=false \
+          --set grafana.sidecar.dashboards.enabled=true \
+          --set grafana.additionalDataSources[0].name=Loki \
+          --set grafana.additionalDataSources[0].uid=loki \
+          --set grafana.additionalDataSources[0].type=loki \
+          --set grafana.additionalDataSources[0].url=http://loki:3100 \
+          --set grafana.additionalDataSources[0].access=proxy \
+          --wait --timeout 180s
+
+  install-logging:
+    desc: Install Loki and Promtail for centralized logging
+    cmds:
+      - helm repo add grafana https://grafana.github.io/helm-charts
+      - helm repo update
+      - |
+        helm upgrade --install loki grafana/loki-stack \
+          --set promtail.enabled=true \
+          --set loki.persistence.enabled=false \
+          --wait --timeout 120s
+
+  install-observability:
+    desc: Install optional observability stack (Prometheus, Grafana, Loki, Promtail)
+    cmds:
+      - task: install-logging
+      - task: install-monitoring

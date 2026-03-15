@@ -1,0 +1,13 @@
+package com.plantmanager.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record ChangePasswordDTO(
+        @NotBlank(message = "Current password is required")
+        String currentPassword,
+
+        @NotBlank(message = "New password is required")
+        @Size(min = 8, message = "Password must be at least 8 characters")
+        String newPassword) {
+}

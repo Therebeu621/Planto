@@ -1,0 +1,33 @@
+appId: com.projet.planto_app
+---
+# TC-006 : Navigation vers la page d'inscription depuis la connexion
+- launchApp:
+    clearState: true
+
+- assertVisible:
+    text: "PLANTO"
+
+# Taper sur le lien "[S'inscrire]"
+- tapOn:
+    text: "[S'inscrire]"
+
+# Vérifier que la page d'inscription est chargée
+- assertVisible:
+    text: "Créer un compte"
+
+# Vérifier la présence des champs du formulaire d'inscription
+- assertVisible:
+    text: "Nom d'affichage"
+
+- assertVisible:
+    text: "Adresse email"
+
+- assertVisible:
+    text: "Mot de passe"
+
+- assertVisible:
+    text: "S'INSCRIRE"
+
+# Vérifier le lien de retour vers la connexion
+- assertVisible:
+    text: "Déjà un compte ?"

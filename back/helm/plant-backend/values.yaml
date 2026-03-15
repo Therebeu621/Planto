@@ -1,0 +1,68 @@
+replicaCount: 2
+
+image:
+  repository: registry.gitlab.com/plant-manager/backend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  host: plant-backend.etu-k8s.lan
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "200m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+env:
+  DB_HOST: plant-db-postgresql
+  DB_PORT: "5432"
+  DB_NAME: plant_db
+  DB_USER: plant_user
+  DB_PASSWORD: plant_pass
+  MCP_API_KEY: ""
+  PHOTOS_PATH: /app/photos
+
+postgresql:
+  enabled: true
+  image: postgres:15-alpine
+  storage: 2Gi
+  storageClassName: ""
+
+persistence:
+  photos:
+    enabled: true
+    size: 1Gi
+    storageClassName: ""
+
+metrics:
+  enabled: true
+  path: /q/metrics
+  port: 8080
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+health:
+  liveness:
+    path: /q/health/live
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readiness:
+    path: /q/health/ready
+    initialDelaySeconds: 15
+    periodSeconds: 10

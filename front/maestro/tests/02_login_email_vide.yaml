@@ -1,0 +1,21 @@
+appId: com.projet.planto_app
+---
+# TC-002 : Connexion avec email vide — vérification du message d'erreur
+- launchApp:
+    clearState: true
+
+- assertVisible:
+    text: "PLANTO"
+
+# Laisser le champ email vide, saisir uniquement le mot de passe
+- tapOn:
+    text: "Mot de passe"
+- inputText: "password123"
+
+# Tenter de se connecter
+- tapOn:
+    text: "SE CONNECTER"
+
+# Vérifier que le message d'erreur de validation apparaît
+- assertVisible:
+    text: "Veuillez remplir tous les champs"

@@ -1,0 +1,61 @@
+appId: com.projet.planto_app
+---
+# TC-015 : Navigation vers la page Maison et vérification des éléments
+- launchApp:
+    clearState: true
+
+- assertVisible:
+    text: "PLANTO"
+
+# Se connecter
+- tapOn:
+    text: "Adresse email"
+- inputText: "test@test.com"
+
+- tapOn:
+    text: "Mot de passe"
+- inputText: "password123"
+
+- tapOn:
+    text: "SE CONNECTER"
+
+# Attendre la page d'accueil
+- assertVisible:
+    text: "PLANTO"
+
+# Accéder à la page Maison via la section "Mes Maisons" sur la page d'accueil
+- scrollUntilVisible:
+    element:
+      text: "Mes Maisons"
+    direction: DOWN
+    optional: true
+
+- tapOn:
+    text: "Mes Maisons"
+    optional: true
+
+# Ou naviguer via le nom de la maison active affiché dans l'AppBar
+- tapOn:
+    text: "Ma Maison"
+    optional: true
+
+# Vérifier les éléments de la page Maison
+- assertVisible:
+    text: "Ma Maison"
+
+# Vérifier les compteurs (Plantes, Pièces, Membres)
+- assertVisible:
+    text: "Plantes"
+    optional: true
+
+- assertVisible:
+    text: "Pieces"
+    optional: true
+
+- assertVisible:
+    text: "Membres"
+    optional: true
+
+# Vérifier la section principale de la maison
+- assertVisible:
+    text: "Ma Maison"

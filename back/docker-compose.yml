@@ -1,0 +1,84 @@
+# Docker Compose for local development
+#
+# Quick start:
+#   docker-compose up -d
+#
+# We get:
+#   - PostgreSQL on localhost:5433
+#   - PgAdmin (database UI) on http://localhost:5050
+#     Login: admin@plantmanager.dev / admin
+#   - SonarQube on http://localhost:9000
+#     Login: admin / admin
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: plant-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-plant_db}
+      POSTGRES_USER: ${DB_USER:-plant_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-plant_pass}
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - plant-data:/var/lib/postgresql/data
+    networks:
+      - plant-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-plant_user} -d ${DB_NAME:-plant_db}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: plant-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@plantmanager.dev}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - plant-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  sonarqube:
+    image: sonarqube:lts-community
+    container_name: plant-sonarqube
+    profiles:
+      - quality
+    restart: unless-stopped
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-plant_db}
+      SONAR_JDBC_USERNAME: ${DB_USER:-plant_user}
+      SONAR_JDBC_PASSWORD: ${DB_PASSWORD:-plant_pass}
+    ports:
+      - "${SONAR_PORT:-9000}:9000"
+    volumes:
+      - sonarqube-data:/opt/sonarqube/data
+      - sonarqube-extensions:/opt/sonarqube/extensions
+      - sonarqube-logs:/opt/sonarqube/logs
+    networks:
+      - plant-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+networks:
+  plant-network:
+    driver: bridge
+
+volumes:
+  plant-data:
+  pgadmin-data:
+  sonarqube-data:
+  sonarqube-extensions:
+  sonarqube-logs:
