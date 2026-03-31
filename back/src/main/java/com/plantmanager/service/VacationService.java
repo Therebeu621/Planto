@@ -56,7 +56,7 @@ public class VacationService {
 
         // Cannot delegate to yourself
         if (userId.equals(dto.delegateId())) {
-            throw new BadRequestException("Cannot delegate to yourself");
+            throw new BadRequestException("Vous ne pouvez pas vous deleguer vos plantes a vous-meme");
         }
 
         // Validate dates
@@ -68,16 +68,22 @@ public class VacationService {
             throw new BadRequestException("End date must be today or in the future");
         }
 
-        // Check if already on vacation in this house
-        VacationDelegationEntity existing = VacationDelegationEntity.findActiveDelegationByDelegator(userId, houseId);
+        // Check if this new delegation overlaps one of the user's existing absences.
+        VacationDelegationEntity existing =
+                VacationDelegationEntity.findOverlappingActiveDelegationByDelegator(
+                        userId, houseId, dto.startDate(), dto.endDate());
         if (existing != null) {
-            throw new BadRequestException("You already have an active vacation delegation in this house. Cancel it first.");
+            throw new BadRequestException(
+                    "Vous avez deja une delegation vacances sur cette periode. Annulez-la d'abord.");
         }
 
-        // Check if delegate has an active delegation (on vacation or scheduled) - can't delegate to someone who's away
-        VacationDelegationEntity delegateVacation = VacationDelegationEntity.findActiveDelegationByDelegator(dto.delegateId(), houseId);
+        // Check if the delegate is already on vacation during the same period.
+        VacationDelegationEntity delegateVacation =
+                VacationDelegationEntity.findOverlappingActiveDelegationByDelegator(
+                        dto.delegateId(), houseId, dto.startDate(), dto.endDate());
         if (delegateVacation != null) {
-            throw new BadRequestException("This member is currently on vacation and cannot accept delegations");
+            throw new BadRequestException(
+                    "Ce membre est deja en vacances sur cette periode et ne peut pas accepter de delegation");
         }
 
         // Create delegation

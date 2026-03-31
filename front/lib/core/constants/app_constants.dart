@@ -13,25 +13,23 @@ class AppConstants {
 
 
   /// Cle API Google Gemini — injectée via --dart-define=GEMINI_API_KEY=...
-  static const String geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
+  static const String geminiApiKey = String.fromEnvironment(
+    'GEMINI_API_KEY',
+  );
 
   /// Modele Gemini a utiliser
-  static const String geminiModel = 'gemini-flash-latest';
+  static const String geminiModel = 'gemini-2.5-flash';
 
   /// API base URL (Quarkus backend)
-  /// - localhost for web/desktop/iOS simulator
-  /// - 10.0.2.2 for Android emulator
-  /// - Your Mac's IP for physical device
-  ///
-  static const String physicalDeviceIp = '10.236.15.213'; // IP actuelle du Mac
+  /// Injectée via --dart-define=API_BASE_URL=http://votre-ip:8080
+  /// Si non définie, détection automatique selon la plateforme :
+  /// - Android emulator → http://10.0.2.2:8080
+  /// - Autres (iOS sim, web, desktop) → http://localhost:8080
+  static const String _apiBaseUrlOverride = String.fromEnvironment('API_BASE_URL');
 
   static String get apiBaseUrl {
-    // For Android emulator, use 10.0.2.2
-    // For iOS simulator or web, use localhost
-    // For physical device, use your Mac's IP
+    if (_apiBaseUrlOverride.isNotEmpty) return _apiBaseUrlOverride;
     if (defaultTargetPlatform == TargetPlatform.android) {
-      // 10.0.2.2 = localhost pour l'émulateur Android
-      // Pour appareil physique, utilisez _physicalDeviceIp
       return 'http://10.0.2.2:8080';
     }
     return 'http://localhost:8080';

@@ -1,11 +1,20 @@
 import 'package:dio/dio.dart';
+import 'package:planto/core/models/care_log.dart';
 import 'package:planto/core/models/plant.dart';
 import 'package:planto/core/services/api_client.dart';
+import 'package:planto/core/services/cache_service.dart';
+import 'package:planto/core/utils/api_error_formatter.dart';
 
 /// Service for plant API operations.
 /// Uses ApiClient with automatic token refresh.
+/// Supporte le mode hors-ligne via cache local.
 class PlantService {
   late final Dio _dio;
+  final CacheService _cache = CacheService.instance;
+
+  /// Indique si la dernière requête a été servie depuis le cache
+  bool lastRequestFromCache = false;
+
   PlantService({Dio? dio}) : _dio = dio ?? ApiClient.instance.dio;
 
   /// Get all plants for the current user
@@ -15,6 +24,9 @@ class PlantService {
 
   /// Get all plants with optional filters
   Future<List<Plant>> getPlants({String? roomId, String? status}) async {
+    final cacheKey = 'plants_${roomId ?? 'all'}_${status ?? 'all'}';
+    lastRequestFromCache = false;
+
     try {
       final queryParams = <String, dynamic>{};
       if (roomId != null) queryParams['roomId'] = roomId;
@@ -27,6 +39,8 @@ class PlantService {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
+        // Mise en cache de la réponse brute
+        await _cache.putList(cacheKey, data);
         return data.map((json) => Plant.fromJson(json)).toList();
       } else {
         throw Exception('Failed to load plants');
@@ -35,7 +49,17 @@ class PlantService {
       if (e.response?.statusCode == 401) {
         throw Exception('Session expirée');
       }
-      throw Exception('Erreur réseau: ${e.message}');
+      // Mode hors-ligne : tenter le cache
+      final cached = await _cache.getList(cacheKey);
+      if (cached != null) {
+        lastRequestFromCache = true;
+        return cached
+            .map((json) => Plant.fromJson(json as Map<String, dynamic>))
+            .toList();
+      }
+      throw Exception(
+        formatApiError(e, fallbackMessage: 'Impossible de charger les plantes'),
+      );
     }
   }
 
@@ -62,16 +86,28 @@ class PlantService {
 
   /// Get a single plant by ID
   Future<Plant> getPlantById(String plantId) async {
+    final cacheKey = 'plant_$plantId';
+    lastRequestFromCache = false;
+
     try {
       final response = await _dio.get('/api/v1/plants/$plantId');
 
       if (response.statusCode == 200) {
+        await _cache.putObject(cacheKey, response.data as Map<String, dynamic>);
         return Plant.fromJson(response.data);
       } else {
         throw Exception('Plant not found');
       }
     } on DioException catch (e) {
-      throw Exception('Erreur: ${e.message}');
+      // Mode hors-ligne
+      final cached = await _cache.getObject(cacheKey);
+      if (cached != null) {
+        lastRequestFromCache = true;
+        return Plant.fromJson(cached);
+      }
+      throw Exception(
+        formatApiError(e, fallbackMessage: 'Impossible de charger la plante'),
+      );
     }
   }
 
@@ -86,7 +122,19 @@ class PlantService {
         throw Exception('Failed to water plant');
       }
     } on DioException catch (e) {
-      throw Exception('Erreur: ${e.message}');
+      final formatted = formatApiError(
+        e,
+        fallbackMessage: 'Impossible d\'arroser la plante',
+      );
+      if (e.response?.statusCode == 403 &&
+          formatted.toLowerCase() == "you don't have access to this plant") {
+        throw Exception(
+          'Vous ne pouvez pas arroser cette plante sans delegation vacances active',
+        );
+      }
+      throw Exception(
+        formatted,
+      );
     }
   }
 
@@ -116,12 +164,15 @@ class PlantService {
       if (roomId != null) data['roomId'] = roomId;
       if (potDiameterCm != null) data['potDiameterCm'] = potDiameterCm;
       if (photoUrl != null) data['photoUrl'] = photoUrl;
-      if (wateringIntervalDays != null) data['wateringIntervalDays'] = wateringIntervalDays;
+      if (wateringIntervalDays != null)
+        data['wateringIntervalDays'] = wateringIntervalDays;
       if (exposure != null) data['exposure'] = exposure;
       if (customSpecies != null) data['customSpecies'] = customSpecies;
       if (speciesId != null) data['speciesId'] = speciesId;
       if (notes != null) data['notes'] = notes;
-      if (lastWatered != null) data['lastWatered'] = '${lastWatered.toUtc().toIso8601String().split('.').first}Z';
+      if (lastWatered != null)
+        data['lastWatered'] =
+            '${lastWatered.toUtc().toIso8601String().split('.').first}Z';
 
       final response = await _dio.post('/api/v1/plants', data: data);
 
@@ -131,7 +182,9 @@ class PlantService {
         throw Exception('Failed to create plant');
       }
     } on DioException catch (e) {
-      throw Exception('Erreur: ${e.message}');
+      throw Exception(
+        formatApiError(e, fallbackMessage: 'Impossible de creer la plante'),
+      );
     }
   }
 
@@ -140,7 +193,9 @@ class PlantService {
     try {
       await _dio.delete('/api/v1/plants/$plantId');
     } on DioException catch (e) {
-      throw Exception('Erreur: ${e.message}');
+      throw Exception(
+        formatApiError(e, fallbackMessage: 'Impossible de supprimer la plante'),
+      );
     }
   }
 
@@ -165,7 +220,8 @@ class PlantService {
       if (potDiameterCm != null) data['potDiameterCm'] = potDiameterCm;
       if (roomId != null) data['roomId'] = roomId;
       if (photoUrl != null) data['photoUrl'] = photoUrl;
-      if (wateringIntervalDays != null) data['wateringIntervalDays'] = wateringIntervalDays;
+      if (wateringIntervalDays != null)
+        data['wateringIntervalDays'] = wateringIntervalDays;
       if (exposure != null) data['exposure'] = exposure;
       if (notes != null) data['notes'] = notes;
       if (isSick != null) data['isSick'] = isSick;
@@ -183,18 +239,21 @@ class PlantService {
       if (e.response?.statusCode == 404) {
         throw Exception('Plante non trouvee');
       }
-      throw Exception('Erreur: ${e.message}');
+      throw Exception(
+        formatApiError(e, fallbackMessage: 'Impossible de modifier la plante'),
+      );
     }
   }
 
   /// Upload a photo for a plant
-  Future<Plant> uploadPlantPhoto(String plantId, List<int> bytes, String fileName) async {
+  Future<Plant> uploadPlantPhoto(
+    String plantId,
+    List<int> bytes,
+    String fileName,
+  ) async {
     try {
       final formData = FormData.fromMap({
-        'file': MultipartFile.fromBytes(
-          bytes,
-          filename: fileName,
-        ),
+        'file': MultipartFile.fromBytes(bytes, filename: fileName),
       });
 
       final response = await _dio.post(
@@ -209,21 +268,71 @@ class PlantService {
       }
     } on DioException catch (e) {
       if (e.response?.statusCode == 400) {
-        final message = e.response?.data['message'] ?? 'Fichier invalide';
-        throw Exception(message);
+        throw Exception(formatApiError(e, fallbackMessage: 'Fichier invalide'));
       }
-      throw Exception('Erreur: ${e.message}');
+      throw Exception(
+        formatApiError(e, fallbackMessage: 'Impossible d\'envoyer la photo'),
+      );
+    }
+  }
+
+  /// Get all care logs for a plant, with optional action filter
+  Future<List<CareLog>> getCareLogs(String plantId, {String? action}) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (action != null) queryParams['action'] = action;
+
+      final response = await _dio.get(
+        '/api/v1/plants/$plantId/care-logs',
+        queryParameters: queryParams,
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data;
+        return data
+            .map((json) => CareLog.fromJson(json as Map<String, dynamic>))
+            .toList();
+      } else {
+        throw Exception('Failed to load care logs');
+      }
+    } on DioException catch (e) {
+      throw Exception(
+        formatApiError(
+          e,
+          fallbackMessage: 'Impossible de charger l\'historique des soins',
+        ),
+      );
     }
   }
 
   /// Create a care log entry (fertilization, pruning, treatment, note)
-  Future<void> createCareLog(String plantId, String action, {String? notes}) async {
+  Future<void> createCareLog(
+    String plantId,
+    String action, {
+    String? notes,
+  }) async {
     try {
       final data = <String, dynamic>{'action': action};
       if (notes != null && notes.isNotEmpty) data['notes'] = notes;
       await _dio.post('/api/v1/plants/$plantId/care-logs', data: data);
     } on DioException catch (e) {
-      throw Exception('Erreur: ${e.message}');
+      throw Exception(
+        formatApiError(
+          e,
+          fallbackMessage: 'Impossible d\'ajouter cette action',
+        ),
+      );
+    }
+  }
+
+  /// Delete a note-type care log
+  Future<void> deleteCareLog(String plantId, String logId) async {
+    try {
+      await _dio.delete('/api/v1/plants/$plantId/care-logs/$logId');
+    } on DioException catch (e) {
+      throw Exception(
+        formatApiError(e, fallbackMessage: 'Impossible de supprimer ce memo'),
+      );
     }
   }
 

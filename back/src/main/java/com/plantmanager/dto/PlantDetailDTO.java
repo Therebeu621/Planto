@@ -36,7 +36,9 @@ public record PlantDetailDTO(
                 // Pot diameter
                 BigDecimal potDiameterCm,
                 // Recent care logs
-                List<CareLogInfo> recentCareLogs) {
+                List<CareLogInfo> recentCareLogs,
+                // Whether the current user can manage (write) this plant
+                boolean canManage) {
         public record RoomInfo(UUID id, String name, String type) {
         }
 
@@ -62,7 +64,7 @@ public record PlantDetailDTO(
         /**
          * Create a PlantDetailDTO from a UserPlantEntity.
          */
-        public static PlantDetailDTO from(UserPlantEntity entity, String photoBaseUrl) {
+        public static PlantDetailDTO from(UserPlantEntity entity, boolean canManage, String photoBaseUrl) {
                 String photoUrl = null;
                 if (entity.photoPath != null && !entity.photoPath.isEmpty()) {
                         // Don't add prefix if it's already an absolute URL
@@ -124,10 +126,15 @@ public record PlantDetailDTO(
                                 speciesInfo,
                                 entity.customSpecies,
                                 entity.potDiameterCm,
-                                careLogs);
+                                careLogs,
+                                canManage);
+        }
+
+        public static PlantDetailDTO from(UserPlantEntity entity, boolean canManage) {
+                return from(entity, canManage, "/api/v1/files");
         }
 
         public static PlantDetailDTO from(UserPlantEntity entity) {
-                return from(entity, "/api/v1/files");
+                return from(entity, true, "/api/v1/files");
         }
 }

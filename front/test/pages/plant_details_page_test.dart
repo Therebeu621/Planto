@@ -28,8 +28,12 @@ void main() {
     'needsRepotting': true,
     'exposure': 'PARTIAL_SHADE',
     'wateringIntervalDays': 7,
-    'lastWatered': DateTime.now().subtract(const Duration(days: 8)).toIso8601String(),
-    'nextWateringDate': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
+    'lastWatered': DateTime.now()
+        .subtract(const Duration(days: 8))
+        .toIso8601String(),
+    'nextWateringDate': DateTime.now()
+        .subtract(const Duration(days: 1))
+        .toIso8601String(),
     'notes': 'Belle plante tropicale',
     'potDiameterCm': 14.0,
     'roomId': 'r1',
@@ -44,24 +48,24 @@ void main() {
       'genus': 'Ficus',
       'imageUrl': null,
     },
-    'room': {
-      'id': 'r1',
-      'name': 'Salon',
-      'type': 'LIVING_ROOM',
-    },
+    'room': {'id': 'r1', 'name': 'Salon', 'type': 'LIVING_ROOM'},
     'recentCareLogs': [
       {
         'id': 'cl1',
         'action': 'WATERING',
         'notes': null,
-        'performedAt': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
+        'performedAt': DateTime.now()
+            .subtract(const Duration(days: 1))
+            .toIso8601String(),
         'performedByName': 'Test User',
       },
       {
         'id': 'cl2',
         'action': 'FERTILIZING',
         'notes': 'Engrais liquide',
-        'performedAt': DateTime.now().subtract(const Duration(days: 10)).toIso8601String(),
+        'performedAt': DateTime.now()
+            .subtract(const Duration(days: 10))
+            .toIso8601String(),
         'performedByName': 'Test User',
       },
     ],
@@ -74,14 +78,12 @@ void main() {
     'isWilted': false,
     'needsRepotting': false,
     'notes': null,
-    'nextWateringDate': DateTime.now().add(const Duration(days: 5)).toIso8601String(),
+    'nextWateringDate': DateTime.now()
+        .add(const Duration(days: 5))
+        .toIso8601String(),
   };
 
-  final mockPlantSick = {
-    ...mockPlantDetail,
-    'isSick': true,
-    'isWilted': true,
-  };
+  final mockPlantSick = {...mockPlantDetail, 'isSick': true, 'isWilted': true};
 
   final mockRooms = [
     {
@@ -113,23 +115,15 @@ void main() {
   final mockWateredPlant = {
     ...mockPlantDetail,
     'needsWatering': false,
-    'nextWateringDate': DateTime.now().add(const Duration(days: 7)).toIso8601String(),
+    'nextWateringDate': DateTime.now()
+        .add(const Duration(days: 7))
+        .toIso8601String(),
     'lastWatered': DateTime.now().toIso8601String(),
   };
 
   final mockPotSuggestions = [
-    {
-      'id': 'pot1',
-      'diameterCm': 16.0,
-      'quantity': 3,
-      'label': 'Terre cuite',
-    },
-    {
-      'id': 'pot2',
-      'diameterCm': 18.0,
-      'quantity': 1,
-      'label': null,
-    },
+    {'id': 'pot1', 'diameterCm': 16.0, 'quantity': 3, 'label': 'Terre cuite'},
+    {'id': 'pot2', 'diameterCm': 18.0, 'quantity': 1, 'label': null},
   ];
 
   setUp(() {
@@ -145,12 +139,22 @@ void main() {
   void setupMocks({Map<String, dynamic>? plantData, bool withError = false}) {
     mockInterceptor.clearResponses();
     if (withError) {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1', isError: true, errorStatusCode: 404);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1',
+        isError: true,
+        errorStatusCode: 404,
+      );
       mockInterceptor.addMockResponse('/api/v1/rooms', data: mockRooms);
     } else {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1', data: plantData ?? mockPlantDetail);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1',
+        data: plantData ?? mockPlantDetail,
+      );
       mockInterceptor.addMockResponse('/api/v1/rooms', data: mockRooms);
-      mockInterceptor.addMockResponse('/api/v1/houses/active', data: mockActiveHouse);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/active',
+        data: mockActiveHouse,
+      );
     }
   }
 
@@ -230,7 +234,10 @@ void main() {
 
       // Now fix the mock to return success on retry
       mockInterceptor.clearResponses();
-      mockInterceptor.addMockResponse('/api/v1/plants/p1', data: mockPlantDetail);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1',
+        data: mockPlantDetail,
+      );
       mockInterceptor.addMockResponse('/api/v1/rooms', data: mockRooms);
 
       await tester.tap(find.text('Reessayer'));
@@ -304,12 +311,14 @@ void main() {
       expect(find.text('Fertiliser'), findsWidgets);
       expect(find.text('Tailler'), findsWidgets);
       expect(find.text('Traiter'), findsWidgets);
-      expect(find.text('Note'), findsWidgets);
+      expect(find.text('Memo'), findsWidgets);
 
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('shows repot button when plant needs repotting', (tester) async {
+    testWidgets('shows repot button when plant needs repotting', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -548,8 +557,10 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
       setupMocks();
-      mockInterceptor.addMockResponse('/api/v1/plants/p1',
-          data: {...mockPlantDetail, 'nickname': 'Nouveau Ficus'});
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1',
+        data: {...mockPlantDetail, 'nickname': 'Nouveau Ficus'},
+      );
 
       await tester.pumpWidget(buildWidget());
       await tester.pump(const Duration(milliseconds: 300));
@@ -593,7 +604,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('tapping Note opens care log dialog with autofocus', (tester) async {
+    testWidgets('tapping Note opens care log dialog with autofocus', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -603,10 +616,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.text('Note'));
+      await tester.tap(find.text('Memo'));
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Note'), findsWidgets);
+      expect(find.text('Memo'), findsWidgets);
 
       FlutterError.onError = origOnError;
     });
@@ -690,7 +703,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('repot dialog with empty suggestions shows warning', (tester) async {
+    testWidgets('repot dialog with empty suggestions shows warning', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -736,7 +751,9 @@ void main() {
   });
 
   group('PlantDetailsPage - Healthy plant', () {
-    testWidgets('healthy plant does not show sick/wilted status', (tester) async {
+    testWidgets('healthy plant does not show sick/wilted status', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -776,27 +793,29 @@ void main() {
       final origOnError = suppressOverflowErrors();
       setupMocks();
 
-      await tester.pumpWidget(MaterialApp(
-        home: Builder(
-          builder: (context) => ElevatedButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => PlantDetailsPage(
-                  plantId: 'p1',
-                  plantName: 'Mon Ficus',
-                  plantService: plantService,
-                  roomService: roomService,
-                  houseService: houseService,
-                  notificationService: NotificationService(),
-                  potService: potService,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PlantDetailsPage(
+                    plantId: 'p1',
+                    plantName: 'Mon Ficus',
+                    plantService: plantService,
+                    roomService: roomService,
+                    houseService: houseService,
+                    notificationService: NotificationService(),
+                    potService: potService,
+                  ),
                 ),
               ),
+              child: const Text('Go'),
             ),
-            child: const Text('Go'),
           ),
         ),
-      ));
+      );
 
       await tester.tap(find.text('Go'));
       await tester.pump(const Duration(milliseconds: 300));
@@ -814,31 +833,35 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
       setupMocks();
-      mockInterceptor.addMockResponse('/api/v1/plants/p1',
-          data: mockPlantDetail);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1',
+        data: mockPlantDetail,
+      );
 
       // Wrap in Navigator to allow pop on delete
-      await tester.pumpWidget(MaterialApp(
-        home: Builder(
-          builder: (context) => ElevatedButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => PlantDetailsPage(
-                  plantId: 'p1',
-                  plantName: 'Mon Ficus',
-                  plantService: plantService,
-                  roomService: roomService,
-                  houseService: houseService,
-                  notificationService: NotificationService(),
-                  potService: potService,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PlantDetailsPage(
+                    plantId: 'p1',
+                    plantName: 'Mon Ficus',
+                    plantService: plantService,
+                    roomService: roomService,
+                    houseService: houseService,
+                    notificationService: NotificationService(),
+                    potService: potService,
+                  ),
                 ),
               ),
+              child: const Text('Go'),
             ),
-            child: const Text('Go'),
           ),
         ),
-      ));
+      );
 
       await tester.tap(find.text('Go'));
       await tester.pump(const Duration(milliseconds: 300));
@@ -855,7 +878,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Dialog should appear with confirmation text
-      expect(find.textContaining('Voulez-vous vraiment supprimer'), findsOneWidget);
+      expect(
+        find.textContaining('Voulez-vous vraiment supprimer'),
+        findsOneWidget,
+      );
 
       // Tap Supprimer in the dialog to confirm
       await tester.tap(find.text('Supprimer').last);
@@ -904,8 +930,10 @@ void main() {
       final origOnError = suppressOverflowErrors();
       setupMocks();
       // Make the delete call fail
-      mockInterceptor.addMockResponse('/api/v1/plants/p1',
-          data: mockPlantDetail);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1',
+        data: mockPlantDetail,
+      );
       // Override with error for DELETE - we need a different path pattern
       // Since the interceptor matches by contains, we set a specific error for delete
       // Actually, the delete uses the same path /api/v1/plants/p1 so we need it to succeed for GET but fail for DELETE
@@ -917,8 +945,11 @@ void main() {
 
       // Now set up the mock to return an error for the delete
       mockInterceptor.clearResponses();
-      mockInterceptor.addMockResponse('/api/v1/plants/p1',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1',
+        isError: true,
+        errorStatusCode: 500,
+      );
       mockInterceptor.addMockResponse('/api/v1/rooms', data: mockRooms);
 
       // Scroll to danger zone
@@ -960,8 +991,11 @@ void main() {
 
       // Make update API fail
       mockInterceptor.clearResponses();
-      mockInterceptor.addMockResponse('/api/v1/plants/p1',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1',
+        isError: true,
+        errorStatusCode: 500,
+      );
       mockInterceptor.addMockResponse('/api/v1/rooms', data: mockRooms);
 
       // Find save button
@@ -991,8 +1025,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Make the water API fail
-      mockInterceptor.addMockResponse('/water',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/water',
+        isError: true,
+        errorStatusCode: 500,
+      );
 
       await tester.tap(find.text('Arroser').first);
       await tester.pump(const Duration(milliseconds: 300));
@@ -1010,7 +1047,9 @@ void main() {
   });
 
   group('PlantDetailsPage - App Bar Actions', () {
-    testWidgets('tapping edit icon in app bar switches to edit mode', (tester) async {
+    testWidgets('tapping edit icon in app bar switches to edit mode', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -1037,27 +1076,29 @@ void main() {
       final origOnError = suppressOverflowErrors();
       setupMocks();
 
-      await tester.pumpWidget(MaterialApp(
-        home: Builder(
-          builder: (context) => ElevatedButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => PlantDetailsPage(
-                  plantId: 'p1',
-                  plantName: 'Mon Ficus',
-                  plantService: plantService,
-                  roomService: roomService,
-                  houseService: houseService,
-                  notificationService: NotificationService(),
-                  potService: potService,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PlantDetailsPage(
+                    plantId: 'p1',
+                    plantName: 'Mon Ficus',
+                    plantService: plantService,
+                    roomService: roomService,
+                    houseService: houseService,
+                    notificationService: NotificationService(),
+                    potService: potService,
+                  ),
                 ),
               ),
+              child: const Text('Go'),
             ),
-            child: const Text('Go'),
           ),
         ),
-      ));
+      );
 
       await tester.tap(find.text('Go'));
       await tester.pump(const Duration(milliseconds: 300));
@@ -1076,7 +1117,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('tapping photo icon navigates to photo gallery', (tester) async {
+    testWidgets('tapping photo icon navigates to photo gallery', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -1144,33 +1187,38 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('shows species image when photoUrl is null but species imageUrl exists', (tester) async {
-      setupPageTest(tester);
-      addTearDown(() => tester.view.resetPhysicalSize());
-      final origOnError = suppressOverflowErrors();
-      final mockPlantWithSpeciesImage = {
-        ...mockPlantDetail,
-        'photoUrl': null,
-        'species': {
-          'id': 's1',
-          'commonName': 'Ficus elastica',
-          'scientificName': 'Ficus elastica Roxb.',
-          'family': 'Moraceae',
-          'genus': 'Ficus',
-          'imageUrl': 'http://example.com/species.jpg',
-        },
-      };
-      setupMocks(plantData: mockPlantWithSpeciesImage as Map<String, dynamic>);
+    testWidgets(
+      'shows species image when photoUrl is null but species imageUrl exists',
+      (tester) async {
+        setupPageTest(tester);
+        addTearDown(() => tester.view.resetPhysicalSize());
+        final origOnError = suppressOverflowErrors();
+        final mockPlantWithSpeciesImage = {
+          ...mockPlantDetail,
+          'photoUrl': null,
+          'species': {
+            'id': 's1',
+            'commonName': 'Ficus elastica',
+            'scientificName': 'Ficus elastica Roxb.',
+            'family': 'Moraceae',
+            'genus': 'Ficus',
+            'imageUrl': 'http://example.com/species.jpg',
+          },
+        };
+        setupMocks(
+          plantData: mockPlantWithSpeciesImage as Map<String, dynamic>,
+        );
 
-      await tester.pumpWidget(buildWidget());
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpWidget(buildWidget());
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
 
-      // Should attempt to show species Image.network
-      expect(find.byType(Scaffold), findsWidgets);
+        // Should attempt to show species Image.network
+        expect(find.byType(Scaffold), findsWidgets);
 
-      FlutterError.onError = origOnError;
-    });
+        FlutterError.onError = origOnError;
+      },
+    );
   });
 
   group('PlantDetailsPage - Care Log Dialog Error', () {
@@ -1179,8 +1227,11 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
       setupMocks();
-      mockInterceptor.addMockResponse('/care-logs',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/care-logs',
+        isError: true,
+        errorStatusCode: 500,
+      );
 
       await tester.pumpWidget(buildWidget());
       await tester.pump(const Duration(milliseconds: 300));
@@ -1225,17 +1276,22 @@ void main() {
   });
 
   group('PlantDetailsPage - Repot Dialog Extended', () {
-    testWidgets('repot dialog select pot and confirm calls API', (tester) async {
+    testWidgets('repot dialog select pot and confirm calls API', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
       setupMocks();
       mockInterceptor.addMockResponse('/suggestions', data: mockPotSuggestions);
-      mockInterceptor.addMockResponse('/repot', data: {
-        ...mockPlantDetail,
-        'potDiameterCm': 16.0,
-        'needsRepotting': false,
-      });
+      mockInterceptor.addMockResponse(
+        '/repot',
+        data: {
+          ...mockPlantDetail,
+          'potDiameterCm': 16.0,
+          'needsRepotting': false,
+        },
+      );
 
       await tester.pumpWidget(buildWidget());
       await tester.pump(const Duration(milliseconds: 300));
@@ -1311,8 +1367,11 @@ void main() {
       final origOnError = suppressOverflowErrors();
       setupMocks();
       mockInterceptor.addMockResponse('/suggestions', data: mockPotSuggestions);
-      mockInterceptor.addMockResponse('/repot',
-          isError: true, errorStatusCode: 400);
+      mockInterceptor.addMockResponse(
+        '/repot',
+        isError: true,
+        errorStatusCode: 400,
+      );
 
       await tester.pumpWidget(buildWidget());
       await tester.pump(const Duration(milliseconds: 300));
@@ -1349,7 +1408,9 @@ void main() {
   });
 
   group('PlantDetailsPage - Edit Mode Extended', () {
-    testWidgets('edit mode close button resets form and exits edit mode', (tester) async {
+    testWidgets('edit mode close button resets form and exits edit mode', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -1453,7 +1514,9 @@ void main() {
   });
 
   group('PlantDetailsPage - Empty Care Logs', () {
-    testWidgets('shows empty care log message when no care logs', (tester) async {
+    testWidgets('shows empty care log message when no care logs', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();

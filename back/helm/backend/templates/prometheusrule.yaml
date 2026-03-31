@@ -1,0 +1,129 @@
+{{- if .Values.metrics.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "plant-backend.fullname" . }}-alerts
+  labels:
+    {{- include "plant-backend.labels" . | nindent 4 }}
+spec:
+  groups:
+    # ==================== Disponibilite ====================
+    - name: plant-backend-availability
+      rules:
+        - alert: BackendDown
+          expr: up{job="plant-backend"} == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Plant Backend est DOWN"
+            description: "Le pod {{ "{{" }} $labels.pod {{ "}}" }} ne repond plus depuis 1 minute."
+
+        - alert: HighPodRestarts
+          expr: increase(kube_pod_container_status_restarts_total{pod=~"plant-backend.*"}[15m]) > 3
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Redemarrages frequents detectes"
+            description: "Le pod {{ "{{" }} $labels.pod {{ "}}" }} a redemarre {{ "{{" }} $value {{ "}}" }} fois en 15 minutes."
+
+        - alert: ReadinessProbeFailure
+          expr: kube_pod_status_ready{pod=~"plant-backend.*",condition="true"} == 0
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod non pret"
+            description: "Le pod {{ "{{" }} $labels.pod {{ "}}" }} n'est pas pret depuis 2 minutes."
+
+    # ==================== Performance HTTP ====================
+    - name: plant-backend-http
+      rules:
+        - alert: HighErrorRate
+          expr: sum(rate(http_server_requests_seconds_count{job="plant-backend",status=~"5.."}[5m])) / sum(rate(http_server_requests_seconds_count{job="plant-backend"}[5m])) > 0.05
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Taux d'erreurs HTTP 5xx eleve"
+            description: "Plus de 5% des requetes retournent une erreur 5xx (actuel: {{ "{{" }} $value | humanizePercentage {{ "}}" }})."
+
+        - alert: HighLatencyP95
+          expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job="plant-backend"}[5m])) by (le)) > 2
+          for: 3m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Latence HTTP p95 elevee"
+            description: "Le p95 de latence depasse 2 secondes (actuel: {{ "{{" }} $value | humanizeDuration {{ "}}" }})."
+
+        - alert: HighLatencyP99
+          expr: histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{job="plant-backend"}[5m])) by (le)) > 5
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Latence HTTP p99 critique"
+            description: "Le p99 de latence depasse 5 secondes (actuel: {{ "{{" }} $value | humanizeDuration {{ "}}" }})."
+
+        - alert: NoTraffic
+          expr: sum(rate(http_server_requests_seconds_count{job="plant-backend"}[10m])) == 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Aucun trafic HTTP"
+            description: "Aucune requete HTTP recue depuis 10 minutes."
+
+    # ==================== Ressources (CPU / Memoire / JVM) ====================
+    - name: plant-backend-resources
+      rules:
+        - alert: HighMemoryUsage
+          expr: sum(container_memory_working_set_bytes{pod=~"plant-backend.*",container!=""}) by (pod) / sum(kube_pod_container_resource_limits{pod=~"plant-backend.*",resource="memory",container!=""}) by (pod) > 0.85
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Utilisation memoire elevee"
+            description: "Le pod {{ "{{" }} $labels.pod {{ "}}" }} utilise plus de 85% de sa limite memoire."
+
+        - alert: HighCpuUsage
+          expr: sum(rate(container_cpu_usage_seconds_total{pod=~"plant-backend.*",container!=""}[5m])) by (pod) / sum(kube_pod_container_resource_limits{pod=~"plant-backend.*",resource="cpu",container!=""}) by (pod) > 0.80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Utilisation CPU elevee"
+            description: "Le pod {{ "{{" }} $labels.pod {{ "}}" }} utilise plus de 80% de sa limite CPU."
+
+        - alert: JvmHeapCritical
+          expr: sum(jvm_memory_used_bytes{area="heap",job="plant-backend"}) by (pod) / sum(jvm_memory_max_bytes{area="heap",job="plant-backend"}) by (pod) > 0.90
+          for: 3m
+          labels:
+            severity: critical
+          annotations:
+            summary: "JVM Heap presque plein"
+            description: "Le heap JVM du pod {{ "{{" }} $labels.pod {{ "}}" }} depasse 90% (actuel: {{ "{{" }} $value | humanizePercentage {{ "}}" }})."
+
+    # ==================== Base de donnees ====================
+    - name: plant-backend-database
+      rules:
+        - alert: DatabaseConnectionPoolExhausted
+          expr: hikaricp_connections_active{job="plant-backend"} / hikaricp_connections_max{job="plant-backend"} > 0.80
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pool de connexions DB presque sature"
+            description: "Plus de 80% des connexions du pool HikariCP sont actives."
+
+        - alert: SlowDatabaseQueries
+          expr: rate(db_sql_timer_seconds_sum{job="plant-backend"}[5m]) / rate(db_sql_timer_seconds_count{job="plant-backend"}[5m]) > 1
+          for: 3m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Requetes SQL lentes"
+            description: "Le temps moyen des requetes SQL depasse 1 seconde."
+{{- end }}

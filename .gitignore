@@ -1,42 +1,30 @@
-# OS / editor
+# OS / editors
 .DS_Store
 Thumbs.db
-.idea/
 .vscode/
-**/node_modules/
+.claude/
 
-# Windows metadata copied from downloads
-*.Zone.Identifier
+# Dependencies / build
+node_modules/
+front/node_modules/
+front/build/
+front/.dart_tool/
+front/.flutter-plugins
+front/.flutter-plugins-dependencies
 
 # Secrets / local env
-**/.env
-**/.env.*
-!**/.env.example
+.env
+*.pem
 back/src/main/resources/privateKey.pem
 back/src/main/resources/publicKey.pem
-front/android/app/google-services.json
+google-services.json
 
-# Java / Maven
-**/target/
+# Windows metadata
+*:Zone.Identifier
 
-# Flutter / mobile generated files
-**/.dart_tool/
-**/build/
-**/linux/flutter/ephemeral/
-**/windows/flutter/ephemeral/
-**/macos/Flutter/ephemeral/
-**/.flutter-plugins
-**/.flutter-plugins-dependencies
-**/android/local.properties
-**/ios/Flutter/Generated.xcconfig
-**/ios/Flutter/flutter_export_environment.sh
-
-# Portfolio-only exclusions
+# Personal notes / local docs
+ANALYSE_*.md
 RECAP_*.md
-back/POINT_*.md
-back/SUJET_*.pdf
-back/Sujet_projet_M2_*.pdf
-back/gitlab-issues*.csv
-back/WORKFLOW_GUIDE.md
-back/plant-management-guide*.md
-back/.claude/
+CHECKLIST_*.md
+PLAN_*.md
+SOUTENANCE_*.md

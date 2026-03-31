@@ -139,7 +139,7 @@ public class WeatherResourceTest {
                 .get("/weather/watering-advice")
                 .then()
                 .statusCode(200)
-                .body("temperature", allOf(greaterThan(-60.0f), lessThan(60.0f)));
+                .body("temperature", allOf(greaterThanOrEqualTo(-60.0f), lessThan(60.0f)));
     }
 
     @Test

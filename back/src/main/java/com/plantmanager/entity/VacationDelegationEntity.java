@@ -64,6 +64,20 @@ public class VacationDelegationEntity extends PanacheEntityBase {
     }
 
     /**
+     * Find an active delegation for a delegator that overlaps a requested period.
+     * Intervals are inclusive: [existing.startDate, existing.endDate] overlaps
+     * [startDate, endDate] when existing.startDate <= endDate and
+     * existing.endDate >= startDate.
+     */
+    public static VacationDelegationEntity findOverlappingActiveDelegationByDelegator(
+            UUID userId, UUID houseId, LocalDate startDate, LocalDate endDate) {
+        return find(
+                "delegator.id = ?1 and house.id = ?2 and status = ?3 and startDate <= ?4 and endDate >= ?5",
+                userId, houseId, VacationStatus.ACTIVE, endDate, startDate
+        ).firstResult();
+    }
+
+    /**
      * Find all active delegations where this user is the delegate (taking care).
      */
     public static List<VacationDelegationEntity> findActiveDelegationsByDelegate(UUID userId, UUID houseId) {

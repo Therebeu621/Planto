@@ -84,7 +84,7 @@ sast-checkstyle:
 sca-trivy:
   stage: sca
   image:
-    name: aquasec/trivy:latest
+    name: ghcr.io/aquasecurity/trivy:latest
     entrypoint: [""]
   tags:
     - k8s-etu
@@ -215,10 +215,10 @@ build-docker-jvm:
   needs:
     - build-package
   before_script:
-    - wget -qO /tmp/task.tar.gz "https://github.com/go-task/task/releases/download/v3.40.0/task_linux_amd64.tar.gz"
-    - tar -xzf /tmp/task.tar.gz -C /usr/local/bin task
+    - export http_proxy=http://cache-etu.univ-artois.fr:3128
+    - export https_proxy=http://cache-etu.univ-artois.fr:3128
   script:
-    - task build-image-jvm-ci GIT_SHA="$CI_COMMIT_SHORT_SHA"
+    - sh ./ci/build-image.sh jvm "$CI_COMMIT_SHORT_SHA"
   artifacts:
     paths:
       - plant-backend-*.tar
@@ -234,10 +234,10 @@ build-docker-native:
   needs:
     - build-native-package
   before_script:
-    - wget -qO /tmp/task.tar.gz "https://github.com/go-task/task/releases/download/v3.40.0/task_linux_amd64.tar.gz"
-    - tar -xzf /tmp/task.tar.gz -C /usr/local/bin task
+    - export http_proxy=http://cache-etu.univ-artois.fr:3128
+    - export https_proxy=http://cache-etu.univ-artois.fr:3128
   script:
-    - task build-image-native-ci GIT_SHA="$CI_COMMIT_SHORT_SHA"
+    - sh ./ci/build-image.sh native "$CI_COMMIT_SHORT_SHA"
   artifacts:
     paths:
       - plant-backend-*.tar

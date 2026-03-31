@@ -2,9 +2,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planto/core/models/plant.dart';
 import 'package:planto/core/services/plant_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../test_helpers.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late MockDioInterceptor mockInterceptor;
   late Dio dio;
   late PlantService service;
@@ -19,6 +22,7 @@ void main() {
   };
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     mockInterceptor = MockDioInterceptor();
     dio = createMockDio(mockInterceptor);
     service = PlantService(dio: dio);
@@ -47,22 +51,36 @@ void main() {
     });
 
     test('401 error throws session expired', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants',
-          isError: true, errorStatusCode: 401);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants',
+        isError: true,
+        errorStatusCode: 401,
+      );
       expect(
         () => service.getPlants(),
-        throwsA(predicate((e) =>
-            e is Exception && e.toString().contains('Session expir'))),
+        throwsA(
+          predicate(
+            (e) => e is Exception && e.toString().contains('Session expir'),
+          ),
+        ),
       );
     });
 
     test('DioException throws network error', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(
         () => service.getPlants(),
-        throwsA(predicate(
-            (e) => e is Exception && e.toString().contains('Erreur'))),
+        throwsA(
+          predicate(
+            (e) =>
+                e is Exception &&
+                e.toString().contains('Impossible de charger les plantes'),
+          ),
+        ),
       );
     });
   });
@@ -78,8 +96,10 @@ void main() {
 
   group('searchPlants', () {
     test('success returns list of plants', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/search',
-          data: [plantJson]);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/search',
+        data: [plantJson],
+      );
       final result = await service.searchPlants('test');
       expect(result.length, 1);
       expect(result.first.id, 'p1');
@@ -92,8 +112,11 @@ void main() {
     });
 
     test('DioException returns empty list', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/search',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/search',
+        isError: true,
+        errorStatusCode: 500,
+      );
       final result = await service.searchPlants('test');
       expect(result, isEmpty);
     });
@@ -108,31 +131,42 @@ void main() {
     });
 
     test('error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1',
-          isError: true, errorStatusCode: 404);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1',
+        isError: true,
+        errorStatusCode: 404,
+      );
       expect(() => service.getPlantById('p1'), throwsException);
     });
   });
 
   group('waterPlant', () {
     test('success returns plant', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1/water',
-          data: plantJson);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1/water',
+        data: plantJson,
+      );
       final result = await service.waterPlant('p1');
       expect(result.id, 'p1');
     });
 
     test('error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1/water',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1/water',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(() => service.waterPlant('p1'), throwsException);
     });
   });
 
   group('createPlant', () {
     test('success with all params returns plant', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants',
-          data: plantJson, statusCode: 201);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants',
+        data: plantJson,
+        statusCode: 201,
+      );
       final result = await service.createPlant(
         nickname: 'Test',
         roomId: 'r1',
@@ -163,8 +197,11 @@ void main() {
     });
 
     test('success with minimal params returns plant', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants',
-          data: plantJson, statusCode: 201);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants',
+        data: plantJson,
+        statusCode: 201,
+      );
       final result = await service.createPlant(nickname: 'Test');
       expect(result.id, 'p1');
       final request = mockInterceptor.capturedRequests.last;
@@ -173,9 +210,31 @@ void main() {
     });
 
     test('error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(() => service.createPlant(nickname: 'Test'), throwsException);
+    });
+
+    test('400 error returns API validation message', () async {
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants',
+        isError: true,
+        errorStatusCode: 400,
+        data: {'message': 'Le petit nom est requis'},
+      );
+      expect(
+        () => service.createPlant(nickname: ''),
+        throwsA(
+          predicate(
+            (e) =>
+                e is Exception &&
+                e.toString().contains('Le petit nom est requis'),
+          ),
+        ),
+      );
     });
   });
 
@@ -183,13 +242,18 @@ void main() {
     test('success completes', () async {
       mockInterceptor.addMockResponse('/api/v1/plants/p1');
       await service.deletePlant('p1');
-      expect(mockInterceptor.capturedRequests.last.path,
-          contains('/api/v1/plants/p1'));
+      expect(
+        mockInterceptor.capturedRequests.last.path,
+        contains('/api/v1/plants/p1'),
+      );
     });
 
     test('error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(() => service.deletePlant('p1'), throwsException);
     });
   });
@@ -213,52 +277,80 @@ void main() {
     });
 
     test('404 error throws plant not found', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1',
-          isError: true, errorStatusCode: 404);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1',
+        isError: true,
+        errorStatusCode: 404,
+      );
       expect(
         () => service.updatePlant(plantId: 'p1'),
-        throwsA(predicate((e) =>
-            e is Exception &&
-            e.toString().contains('Plante non trouvee'))),
+        throwsA(
+          predicate(
+            (e) =>
+                e is Exception && e.toString().contains('Plante non trouvee'),
+          ),
+        ),
       );
     });
 
     test('generic error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(
         () => service.updatePlant(plantId: 'p1'),
-        throwsA(predicate(
-            (e) => e is Exception && e.toString().contains('Erreur'))),
+        throwsA(
+          predicate(
+            (e) =>
+                e is Exception &&
+                e.toString().contains('Impossible de modifier la plante'),
+          ),
+        ),
       );
     });
   });
 
   group('uploadPlantPhoto', () {
     test('success returns plant', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1/photo',
-          data: plantJson);
-      final result =
-          await service.uploadPlantPhoto('p1', [1, 2, 3], 'photo.jpg');
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1/photo',
+        data: plantJson,
+      );
+      final result = await service.uploadPlantPhoto('p1', [
+        1,
+        2,
+        3,
+      ], 'photo.jpg');
       expect(result.id, 'p1');
     });
 
     test('400 error throws file invalid message', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1/photo',
-          isError: true,
-          errorStatusCode: 400,
-          data: {'message': 'Fichier trop volumineux'});
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1/photo',
+        isError: true,
+        errorStatusCode: 400,
+        data: {'message': 'Fichier trop volumineux'},
+      );
       expect(
         () => service.uploadPlantPhoto('p1', [1, 2, 3], 'photo.jpg'),
-        throwsA(predicate((e) =>
-            e is Exception &&
-            e.toString().contains('Fichier trop volumineux'))),
+        throwsA(
+          predicate(
+            (e) =>
+                e is Exception &&
+                e.toString().contains('Fichier trop volumineux'),
+          ),
+        ),
       );
     });
 
     test('generic error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1/photo',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1/photo',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(
         () => service.uploadPlantPhoto('p1', [1, 2, 3], 'photo.jpg'),
         throwsException,
@@ -284,24 +376,31 @@ void main() {
     });
 
     test('error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1/care-logs',
-          isError: true, errorStatusCode: 500);
-      expect(
-          () => service.createCareLog('p1', 'WATER'), throwsException);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1/care-logs',
+        isError: true,
+        errorStatusCode: 500,
+      );
+      expect(() => service.createCareLog('p1', 'WATER'), throwsException);
     });
   });
 
   group('deletePlantPhoto', () {
     test('success returns plant', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1/photo',
-          data: plantJson);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1/photo',
+        data: plantJson,
+      );
       final result = await service.deletePlantPhoto('p1');
       expect(result.id, 'p1');
     });
 
     test('error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1/photo',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1/photo',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(() => service.deletePlantPhoto('p1'), throwsException);
     });
   });
@@ -310,16 +409,22 @@ void main() {
 
   group('getPlants - non-200 status', () {
     test('non-200 status throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants',
-          data: [], statusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants',
+        data: [],
+        statusCode: 500,
+      );
       expect(() => service.getPlants(), throwsException);
     });
   });
 
   group('searchPlants - non-200 status', () {
     test('non-200 status returns empty list', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/search',
-          data: [], statusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/search',
+        data: [],
+        statusCode: 500,
+      );
       final result = await service.searchPlants('test');
       expect(result, isEmpty);
     });
@@ -327,40 +432,55 @@ void main() {
 
   group('getPlantById - non-200 status', () {
     test('non-200 status throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1',
-          data: {}, statusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1',
+        data: {},
+        statusCode: 500,
+      );
       expect(() => service.getPlantById('p1'), throwsException);
     });
   });
 
   group('waterPlant - non-200 status', () {
     test('non-200 status throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1/water',
-          data: {}, statusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1/water',
+        data: {},
+        statusCode: 500,
+      );
       expect(() => service.waterPlant('p1'), throwsException);
     });
   });
 
   group('createPlant - non-200 status', () {
     test('non-201 status throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants',
-          data: {}, statusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants',
+        data: {},
+        statusCode: 500,
+      );
       expect(() => service.createPlant(nickname: 'Test'), throwsException);
     });
   });
 
   group('updatePlant - non-200 status', () {
     test('non-200 status throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1',
-          data: {}, statusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1',
+        data: {},
+        statusCode: 500,
+      );
       expect(() => service.updatePlant(plantId: 'p1'), throwsException);
     });
   });
 
   group('uploadPlantPhoto - non-200 status', () {
     test('non-200 status throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1/photo',
-          data: {}, statusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1/photo',
+        data: {},
+        statusCode: 500,
+      );
       expect(
         () => service.uploadPlantPhoto('p1', [1, 2, 3], 'photo.jpg'),
         throwsException,
@@ -370,8 +490,11 @@ void main() {
 
   group('deletePlantPhoto - non-200 status', () {
     test('non-200 status throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/plants/p1/photo',
-          data: {}, statusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1/photo',
+        data: {},
+        statusCode: 500,
+      );
       expect(() => service.deletePlantPhoto('p1'), throwsException);
     });
   });

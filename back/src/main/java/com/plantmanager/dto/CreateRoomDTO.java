@@ -9,7 +9,7 @@ import jakarta.validation.constraints.Size;
  * DTO for creating a new room.
  */
 public record CreateRoomDTO(
-        @NotBlank(message = "Room name is required") @Size(max = 100, message = "Room name must be at most 100 characters") String name,
+        @NotBlank(message = "Le nom de la piece est requis") @Size(max = 100, message = "Le nom de la piece doit contenir au maximum 100 caracteres") String name,
 
-        @NotNull(message = "Room type is required") RoomType type) {
+        @NotNull(message = "Le type de piece est requis") RoomType type) {
 }

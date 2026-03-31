@@ -18,19 +18,22 @@ void main() {
   });
 
   Future<void> openDialog(WidgetTester tester, {RoomService? service}) async {
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: Builder(
-          builder: (ctx) => ElevatedButton(
-            onPressed: () => showDialog(
-              context: ctx,
-              builder: (_) => AddRoomDialog(roomService: service ?? roomService),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (ctx) => ElevatedButton(
+              onPressed: () => showDialog(
+                context: ctx,
+                builder: (_) =>
+                    AddRoomDialog(roomService: service ?? roomService),
+              ),
+              child: const Text('Open'),
             ),
-            child: const Text('Open'),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
   }
@@ -67,7 +70,7 @@ void main() {
 
       await openDialog(tester);
       expect(find.text('Type de pi\u00e8ce'), findsOneWidget);
-      expect(find.byType(GridView), findsOneWidget);
+      expect(find.byType(Wrap), findsOneWidget);
 
       FlutterError.onError = origOnError;
     });
@@ -81,8 +84,11 @@ void main() {
       expect(find.text('Salon'), findsWidgets);
       expect(find.text('Chambre'), findsWidgets);
       expect(find.text('Cuisine'), findsWidgets);
-      // Other types may need scrolling but the grid exists
-      expect(find.byType(GridView), findsOneWidget);
+      expect(find.text('Salle de bain'), findsWidgets);
+      expect(find.text('Bureau'), findsWidgets);
+      expect(find.text('Balcon'), findsWidgets);
+      expect(find.text('Jardin'), findsWidgets);
+      expect(find.text('Autre'), findsWidgets);
 
       FlutterError.onError = origOnError;
     });
@@ -131,8 +137,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('selecting room type changes selection and auto-fills name',
-        (tester) async {
+    testWidgets('selecting room type changes selection and auto-fills name', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -154,7 +161,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('selecting type does not overwrite custom name', (tester) async {
+    testWidgets('selecting type does not overwrite custom name', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -174,19 +183,24 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('create button submits and returns true on success',
-        (tester) async {
+    testWidgets('create button submits and returns true on success', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      mockInterceptor.addMockResponse('/api/v1/rooms', data: {
-        'id': 'r1',
-        'name': 'Mon Salon',
-        'type': 'LIVING_ROOM',
-        'plantCount': 0,
-        'plants': [],
-      }, statusCode: 201);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: {
+          'id': 'r1',
+          'name': 'Mon Salon',
+          'type': 'LIVING_ROOM',
+          'plantCount': 0,
+          'plants': [],
+        },
+        statusCode: 201,
+      );
 
       await openDialog(tester);
 
@@ -201,13 +215,19 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('create button shows error snackbar on failure', (tester) async {
+    testWidgets('create button shows error snackbar on failure', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      mockInterceptor.addMockResponse('/api/v1/rooms',
-          data: {}, isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: {},
+        isError: true,
+        errorStatusCode: 500,
+      );
 
       await openDialog(tester);
 
@@ -216,7 +236,7 @@ void main() {
       await tester.tap(find.text('Cr\u00e9er'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Erreur'), findsWidgets);
+      expect(find.textContaining('Impossible de creer la piece'), findsWidgets);
 
       FlutterError.onError = origOnError;
     });
@@ -227,13 +247,17 @@ void main() {
       final origOnError = suppressOverflowErrors();
 
       // Use a response that will succeed
-      mockInterceptor.addMockResponse('/api/v1/rooms', data: {
-        'id': 'r1',
-        'name': 'Test',
-        'type': 'LIVING_ROOM',
-        'plantCount': 0,
-        'plants': [],
-      }, statusCode: 201);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: {
+          'id': 'r1',
+          'name': 'Test',
+          'type': 'LIVING_ROOM',
+          'plantCount': 0,
+          'plants': [],
+        },
+        statusCode: 201,
+      );
 
       await openDialog(tester);
 

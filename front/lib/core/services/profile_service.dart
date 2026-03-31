@@ -9,6 +9,22 @@ class ProfileService {
   late final Dio _dio;
   ProfileService({Dio? dio}) : _dio = dio ?? ApiClient.instance.dio;
 
+  String _extractApiMessage(DioException e) {
+    final data = e.response?.data;
+    if (data is Map<String, dynamic>) {
+      final message = data['message'];
+      if (message is String && message.trim().isNotEmpty) {
+        return message;
+      }
+    }
+
+    if (data is String && data.trim().isNotEmpty) {
+      return data;
+    }
+
+    return e.message ?? 'Erreur inconnue';
+  }
+
   /// Get current user profile
   Future<UserProfile> getCurrentUser() async {
     try {
@@ -80,7 +96,26 @@ class ProfileService {
       if (e.response?.statusCode == 401) {
         throw Exception('Mot de passe actuel incorrect');
       }
-      throw Exception('Erreur: ${e.message}');
+      if (e.response?.statusCode == 400) {
+        final message = _extractApiMessage(e);
+
+        if (message.contains('Mot de passe actuel incorrect')) {
+          throw Exception('Mot de passe actuel incorrect');
+        }
+
+        if (message.contains('Password must be at least 8 characters')) {
+          throw Exception('Le nouveau mot de passe doit contenir au moins 8 caracteres');
+        }
+        if (message.contains('New password is required')) {
+          throw Exception('Le nouveau mot de passe est requis');
+        }
+        if (message.contains('Current password is required')) {
+          throw Exception('Le mot de passe actuel est requis');
+        }
+
+        throw Exception(message);
+      }
+      throw Exception('Impossible de changer le mot de passe pour le moment');
     }
   }
 

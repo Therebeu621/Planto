@@ -1,13 +1,18 @@
 package com.plantmanager.service;
 
 import com.plantmanager.dto.CreateHouseDTO;
+import com.plantmanager.dto.HouseInvitationDTO;
 import com.plantmanager.dto.HouseMemberDTO;
 import com.plantmanager.dto.HouseResponseDTO;
 import com.plantmanager.dto.JoinHouseDTO;
 import com.plantmanager.entity.HouseEntity;
+import com.plantmanager.entity.HouseInvitationEntity;
 import com.plantmanager.entity.RoomEntity;
 import com.plantmanager.entity.UserEntity;
 import com.plantmanager.entity.UserHouseEntity;
+import com.plantmanager.entity.NotificationEntity;
+import com.plantmanager.entity.enums.InvitationStatus;
+import com.plantmanager.entity.enums.NotificationType;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
@@ -15,12 +20,12 @@ import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import com.plantmanager.entity.UserPlantEntity;
 import com.plantmanager.entity.CareLogEntity;
-import com.plantmanager.entity.NotificationEntity;
 
 import jakarta.inject.Inject;
 
 import org.hibernate.Hibernate;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -99,10 +104,11 @@ public class HouseService {
     }
 
     /**
-     * Join a house using invite code.
+     * Request to join a house using invite code.
+     * Creates a PENDING invitation that must be accepted by an owner.
      */
     @Transactional
-    public HouseResponseDTO joinHouse(UUID userId, JoinHouseDTO dto) {
+    public HouseInvitationDTO requestJoinHouse(UUID userId, JoinHouseDTO dto) {
         UserEntity user = UserEntity.findById(userId);
         if (user == null) {
             throw new NotFoundException("User not found");
@@ -114,33 +120,185 @@ public class HouseService {
         // Check if already a member
         UserHouseEntity existing = UserHouseEntity.findByUserAndHouse(userId, house.id);
         if (existing != null) {
-            throw new BadRequestException("You are already a member of this house");
+            throw new BadRequestException("Vous etes deja membre de cette maison");
         }
 
-        // Create membership (as MEMBER and active)
+        // Check if already has a pending request
+        HouseInvitationEntity existingInvitation = HouseInvitationEntity.findPendingByRequesterAndHouse(userId, house.id);
+        if (existingInvitation != null) {
+            throw new BadRequestException("Vous avez deja une demande en attente pour cette maison");
+        }
+
+        // Create pending invitation
+        HouseInvitationEntity invitation = new HouseInvitationEntity();
+        invitation.house = house;
+        invitation.requester = user;
+        invitation.status = InvitationStatus.PENDING;
+        invitation.persist();
+
+        // Send notification to all owners of the house
+        List<UserHouseEntity> owners = UserHouseEntity.list("house.id = ?1 and role = ?2",
+                house.id, UserEntity.UserRole.OWNER);
+        for (UserHouseEntity owner : owners) {
+            NotificationEntity notification = new NotificationEntity();
+            notification.user = owner.user;
+            notification.type = NotificationType.HOUSE_INVITATION;
+            notification.message = user.displayName + " souhaite rejoindre votre maison \"" + house.name + "\"";
+            notification.invitation = invitation;
+            notification.house = house;
+            notification.persist();
+        }
+
+        // Send push notification to owners
+        fcmService.sendToHouseMembers(
+                house.id,
+                userId,
+                "Demande d'adhesion",
+                user.displayName + " souhaite rejoindre votre maison",
+                Map.of("type", "HOUSE_INVITATION", "houseId", house.id.toString(), "invitationId", invitation.id.toString())
+        );
+
+        return HouseInvitationDTO.from(invitation);
+    }
+
+    /**
+     * Accept a join request (OWNER only).
+     */
+    @Transactional
+    public HouseInvitationDTO acceptInvitation(UUID ownerId, UUID invitationId) {
+        HouseInvitationEntity invitation = HouseInvitationEntity.findById(invitationId);
+        if (invitation == null) {
+            throw new NotFoundException("Demande introuvable");
+        }
+
+        // Verify the responder is an OWNER of the house
+        UserHouseEntity ownerMembership = UserHouseEntity.findByUserAndHouse(ownerId, invitation.house.id);
+        if (ownerMembership == null || ownerMembership.role != UserEntity.UserRole.OWNER) {
+            throw new ForbiddenException("Seul le proprietaire peut accepter les demandes");
+        }
+
+        if (invitation.status != InvitationStatus.PENDING) {
+            throw new BadRequestException("Cette demande a deja ete traitee");
+        }
+
+        UserEntity owner = UserEntity.findById(ownerId);
+
+        // Accept the invitation
+        invitation.status = InvitationStatus.ACCEPTED;
+        invitation.respondedBy = owner;
+        invitation.respondedAt = OffsetDateTime.now();
+
+        // Create membership for the requester
         UserHouseEntity membership = new UserHouseEntity();
-        membership.user = user;
-        membership.house = house;
+        membership.user = invitation.requester;
+        membership.house = invitation.house;
         membership.role = UserEntity.UserRole.MEMBER;
         membership.isActive = true;
         membership.persist();
 
-        // Deactivate other houses for this user
-        deactivateOtherHouses(userId, house.id);
+        // Deactivate other houses for the new member
+        deactivateOtherHouses(invitation.requester.id, invitation.house.id);
 
-        // Gamification: check TEAM_PLAYER badge
-        gamificationService.onHouseJoined(userId, house.id);
+        // Gamification
+        gamificationService.onHouseJoined(invitation.requester.id, invitation.house.id);
 
-        // Send push notification to existing house members
-        fcmService.sendToHouseMembers(
-                house.id,
-                userId,
-                "Nouveau membre",
-                user.displayName + " a rejoint la maison",
-                Map.of("type", "MEMBER_JOINED", "houseId", house.id.toString())
+        // Notify the requester that they were accepted
+        NotificationEntity notification = new NotificationEntity();
+        notification.user = invitation.requester;
+        notification.type = NotificationType.MEMBER_JOINED;
+        notification.message = "Votre demande pour rejoindre \"" + invitation.house.name + "\" a ete acceptee !";
+        notification.house = invitation.house;
+        notification.persist();
+
+        // Push notification to the requester
+        fcmService.sendToUser(
+                invitation.requester.id,
+                "Demande acceptee",
+                "Vous avez rejoint la maison \"" + invitation.house.name + "\"",
+                Map.of("type", "MEMBER_JOINED", "houseId", invitation.house.id.toString())
         );
 
-        return HouseResponseDTO.from(house, membership);
+        // Notify existing members
+        fcmService.sendToHouseMembers(
+                invitation.house.id,
+                invitation.requester.id,
+                "Nouveau membre",
+                invitation.requester.displayName + " a rejoint la maison",
+                Map.of("type", "MEMBER_JOINED", "houseId", invitation.house.id.toString())
+        );
+
+        return HouseInvitationDTO.from(invitation);
+    }
+
+    /**
+     * Decline a join request (OWNER only).
+     */
+    @Transactional
+    public HouseInvitationDTO declineInvitation(UUID ownerId, UUID invitationId) {
+        HouseInvitationEntity invitation = HouseInvitationEntity.findById(invitationId);
+        if (invitation == null) {
+            throw new NotFoundException("Demande introuvable");
+        }
+
+        // Verify the responder is an OWNER of the house
+        UserHouseEntity ownerMembership = UserHouseEntity.findByUserAndHouse(ownerId, invitation.house.id);
+        if (ownerMembership == null || ownerMembership.role != UserEntity.UserRole.OWNER) {
+            throw new ForbiddenException("Seul le proprietaire peut refuser les demandes");
+        }
+
+        if (invitation.status != InvitationStatus.PENDING) {
+            throw new BadRequestException("Cette demande a deja ete traitee");
+        }
+
+        UserEntity owner = UserEntity.findById(ownerId);
+
+        // Decline the invitation
+        invitation.status = InvitationStatus.DECLINED;
+        invitation.respondedBy = owner;
+        invitation.respondedAt = OffsetDateTime.now();
+
+        // Notify the requester
+        NotificationEntity notification = new NotificationEntity();
+        notification.user = invitation.requester;
+        notification.type = NotificationType.HOUSE_INVITATION;
+        notification.message = "Votre demande pour rejoindre \"" + invitation.house.name + "\" a ete refusee.";
+        notification.house = invitation.house;
+        notification.persist();
+
+        // Push notification to the requester
+        fcmService.sendToUser(
+                invitation.requester.id,
+                "Demande refusee",
+                "Votre demande pour \"" + invitation.house.name + "\" a ete refusee",
+                Map.of("type", "HOUSE_INVITATION", "houseId", invitation.house.id.toString())
+        );
+
+        return HouseInvitationDTO.from(invitation);
+    }
+
+    /**
+     * Get pending invitations for a house (OWNER only).
+     */
+    public List<HouseInvitationDTO> getPendingInvitations(UUID ownerId, UUID houseId) {
+        UserHouseEntity membership = UserHouseEntity.findByUserAndHouse(ownerId, houseId);
+        if (membership == null || membership.role != UserEntity.UserRole.OWNER) {
+            throw new ForbiddenException("Seul le proprietaire peut voir les demandes");
+        }
+
+        List<HouseInvitationEntity> invitations = HouseInvitationEntity.findPendingByHouse(houseId);
+        return invitations.stream()
+                .map(HouseInvitationDTO::from)
+                .toList();
+    }
+
+    /**
+     * Get my pending join requests (as requester).
+     */
+    public List<HouseInvitationDTO> getMyPendingRequests(UUID userId) {
+        List<HouseInvitationEntity> invitations = HouseInvitationEntity.findPendingByRequester(userId);
+        return invitations.stream()
+                .map(HouseInvitationDTO::from)
+                .toList();
     }
 
     /**

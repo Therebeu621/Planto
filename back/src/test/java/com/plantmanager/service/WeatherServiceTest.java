@@ -4,32 +4,31 @@ import com.plantmanager.client.OpenWeatherClient;
 import com.plantmanager.dto.weather.OpenWeatherResponse;
 import com.plantmanager.dto.weather.PlantCareSheetDTO;
 import com.plantmanager.dto.weather.WeatherWateringAdviceDTO;
-import io.quarkus.test.InjectMock;
-import io.quarkus.test.junit.QuarkusTest;
-import jakarta.inject.Inject;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@QuarkusTest
 public class WeatherServiceTest {
 
-    @Inject
     WeatherService weatherService;
 
-    @InjectMock
-    @RestClient
     OpenWeatherClient weatherClient;
 
     @BeforeEach
     void setUp() {
+        weatherService = new WeatherService();
+        weatherClient = mock(OpenWeatherClient.class);
+        weatherService.weatherClient = weatherClient;
+        weatherService.apiKey = Optional.of("test-api-key");
+        weatherService.defaultCity = "Paris";
         Mockito.reset(weatherClient);
     }
 
@@ -194,14 +193,10 @@ public class WeatherServiceTest {
 
     @Test
     void testWateringAdvice_apiKeyNotConfigured() {
-        // When no API key is configured, getCurrentWeather returns empty
-        // and buildDefaultAdvice is called. We simulate this by making the client throw.
-        when(weatherClient.getCurrentWeather(anyString(), anyString(), eq("metric"), eq("fr")))
-                .thenThrow(new RuntimeException("API error"));
+        weatherService.apiKey = Optional.empty();
 
         WeatherWateringAdviceDTO advice = weatherService.getWateringAdvice("Paris");
 
-        // When API fails, we get default seasonal advice
         assertNotNull(advice);
         assertFalse(advice.advices().isEmpty());
         assertFalse(advice.shouldSkipOutdoorWatering());

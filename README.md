@@ -2,7 +2,7 @@
 
 PLANTO is a full-stack plant management application built with a Quarkus backend and a Flutter client.
 
-This public repository is a portfolio-ready version of a private academic team project originally developed on GitLab. It contains the mobile app, the backend API, and the main DevOps assets used to run and deploy the project.
+This public repository is a portfolio-ready version of a private academic team project originally developed on GitLab. It contains the backend API, the Flutter application, and the main DevOps assets used to run, test, and deploy the project.
 
 ## Overview
 
@@ -18,34 +18,8 @@ Main capabilities include:
 - Weather-based and species-based care recommendations
 - Photo gallery and QR code generation
 - Gamification and streak-related features
-- Garden / culture management, IoT sensor endpoints, and dashboard statistics
+- Garden and culture management, IoT sensor endpoints, and dashboard statistics
 - Push notifications with Firebase Cloud Messaging support
-
-## Quick Demo
-
-Run the backend in dev mode:
-
-```bash
-cd back
-cp .env.example .env
-./scripts/generate-jwt-keys.sh
-docker-compose up -d postgres pgadmin
-./mvnw quarkus:dev
-```
-
-Run the web frontend with Docker Compose:
-
-```bash
-cd front
-docker-compose up --build
-```
-
-The web app is then available at `http://localhost:3000`.
-
-Local demo account available in development:
-
-- Email: `test@test.com`
-- Password: `password123`
 
 ## Screenshots
 
@@ -64,8 +38,8 @@ Local demo account available in development:
 ### Backend
 
 - Java 21
-- Quarkus 3.30
-- PostgreSQL 15
+- Quarkus 3.x
+- PostgreSQL
 - Flyway
 - JWT
 - OpenAPI / Swagger
@@ -93,14 +67,15 @@ Local demo account available in development:
 
 ```text
 .
-|-- back/    # Quarkus API, database migrations, tests, Helm, CI scripts
-|-- front/   # Flutter application, UI tests, mobile/web client
+|-- back/              # Quarkus API, database migrations, tests, Docker, Helm, CI scripts
+|-- docs/screenshots/  # GitHub portfolio screenshots
+|-- front/             # Flutter application, web/mobile client, UI tests
 `-- README.md
 ```
 
 ## Project Context
 
-- Team project developed in a private academic repository
+- Team project originally developed in a private academic repository
 - Repackaged here as a public portfolio version
 - My contributions covered DevOps and infrastructure work (CI/CD, containerization, Kubernetes, Helm, observability), collaborative backend and integration work, and frontend features including the user profile flow and plant creation experience
 
@@ -110,7 +85,7 @@ Local demo account available in development:
 
 - Java 21+
 - Docker and Docker Compose
-- Flutter SDK for local mobile/frontend development
+- Flutter SDK
 
 Optional for advanced local infrastructure:
 
@@ -121,7 +96,7 @@ Optional for advanced local infrastructure:
 
 ## Run the Backend
 
-From [`back/`](back/):
+From `back/`:
 
 ```bash
 cd back
@@ -131,7 +106,7 @@ docker-compose up -d postgres pgadmin
 ./mvnw quarkus:dev
 ```
 
-Services:
+Main local services:
 
 - API: `http://localhost:8080`
 - Swagger UI: `http://localhost:8080/q/swagger-ui`
@@ -139,11 +114,11 @@ Services:
 - PostgreSQL: `localhost:5433`
 - PgAdmin: `http://localhost:5050`
 
-Default local database credentials are documented in [`back/.env.example`](back/.env.example).
+Default local database credentials are documented in `back/.env.example`.
 
 ## Run the Frontend
 
-From [`front/`](front/):
+From `front/`:
 
 Preferred local demo path:
 
@@ -166,7 +141,7 @@ Note: `front/android/app/google-services.json` is intentionally not included in 
 
 ## Frontend / Backend Connection
 
-The Flutter app uses the backend base URL defined in [`front/lib/core/constants/app_constants.dart`](front/lib/core/constants/app_constants.dart).
+The Flutter app uses the backend base URL defined in `front/lib/core/constants/app_constants.dart`.
 
 Current local behavior:
 
@@ -201,8 +176,6 @@ The frontend currently expects:
 
 - `GEMINI_API_KEY` via `--dart-define`
 
-An example file exists at [`front/.env.example`](front/.env.example), but the active integration is injected through the Flutter run command.
-
 ## Testing
 
 ### Backend
@@ -224,18 +197,19 @@ The frontend also contains additional UI automation assets under `front/maestro/
 
 ## DevOps and Deployment
 
-The backend includes local Kubernetes and observability assets:
+The backend includes local infrastructure and observability assets such as:
 
+- Docker-based local services
 - Helm charts
 - Kind configuration
-- Taskfile-based workflow
-- CI scripts for image build and pipeline automation
+- Taskfile-based workflows
+- CI scripts for build and deployment automation
+- Monitoring dashboards and alerting resources
 
-See [`back/README.md`](back/README.md) for the detailed backend and DevOps workflow.
+See `back/README.md` for the detailed backend and DevOps workflow.
 
 ## Team
 
 - Anisse Hamdi
 - Ali Can Cebi
 - Lucas Lefebvre
-

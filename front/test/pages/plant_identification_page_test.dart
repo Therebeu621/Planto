@@ -29,7 +29,7 @@ GeminiService createSuccessGeminiService() {
       200,
     );
   });
-  return GeminiService(client: mockClient);
+  return GeminiService(client: mockClient, apiKey: 'test-key');
 }
 
 /// Creates a mock GeminiService that fails
@@ -37,7 +37,7 @@ GeminiService createErrorGeminiService() {
   final mockClient = http_testing.MockClient((request) async {
     return http.Response('{"error": "API quota exceeded"}', 429);
   });
-  return GeminiService(client: mockClient);
+  return GeminiService(client: mockClient, apiKey: 'test-key');
 }
 
 /// Creates a mock GeminiService that throws
@@ -45,7 +45,11 @@ GeminiService createThrowingGeminiService() {
   final mockClient = http_testing.MockClient((request) async {
     throw Exception('Network error');
   });
-  return GeminiService(client: mockClient);
+  return GeminiService(client: mockClient, apiKey: 'test-key');
+}
+
+Widget mockAddPlantPage(_, __) {
+  return const Scaffold(body: Center(child: Text('Mock add plant page')));
 }
 
 void main() {
@@ -68,18 +72,22 @@ void main() {
   }
 
   group('PlantIdentificationPage', () {
-    testWidgets('shows status text and progress indicator on start',
-        (tester) async {
+    testWidgets('shows status text and progress indicator on start', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      await tester.pumpWidget(MaterialApp(
-        home: PlantIdentificationPage(
-          imageBytes: _validPng,
-          geminiService: createErrorGeminiService(),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PlantIdentificationPage(
+            imageBytes: _validPng,
+            geminiService: createErrorGeminiService(),
+            addPlantPageBuilder: mockAddPlantPage,
+          ),
         ),
-      ));
+      );
       // First pump: _analyzeImage has run setState => "Envoi de l'image..."
       await tester.pump();
 
@@ -98,12 +106,14 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      await tester.pumpWidget(MaterialApp(
-        home: PlantIdentificationPage(
-          imageBytes: _validPng,
-          geminiService: createErrorGeminiService(),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PlantIdentificationPage(
+            imageBytes: _validPng,
+            geminiService: createErrorGeminiService(),
+          ),
         ),
-      ));
+      );
       await tester.pump();
 
       expect(find.byType(ClipOval), findsOneWidget);
@@ -119,12 +129,14 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      await tester.pumpWidget(MaterialApp(
-        home: PlantIdentificationPage(
-          imageBytes: _validPng,
-          geminiService: createErrorGeminiService(),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PlantIdentificationPage(
+            imageBytes: _validPng,
+            geminiService: createErrorGeminiService(),
+          ),
         ),
-      ));
+      );
       await tester.pump();
 
       expect(find.byIcon(Icons.arrow_back), findsOneWidget);
@@ -139,12 +151,14 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      await tester.pumpWidget(MaterialApp(
-        home: PlantIdentificationPage(
-          imageBytes: _validPng,
-          geminiService: createErrorGeminiService(),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PlantIdentificationPage(
+            imageBytes: _validPng,
+            geminiService: createErrorGeminiService(),
+          ),
         ),
-      ));
+      );
       await tester.pump();
 
       // Analyzing state shows sparkle emoji
@@ -164,12 +178,14 @@ void main() {
       // time as the initial status and only while _isAnalyzing is true.
       // We verify the text exists in the build method by checking during
       // the initial loading phase (before the 500ms delay)
-      await tester.pumpWidget(MaterialApp(
-        home: PlantIdentificationPage(
-          imageBytes: _validPng,
-          geminiService: createErrorGeminiService(),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PlantIdentificationPage(
+            imageBytes: _validPng,
+            geminiService: createErrorGeminiService(),
+          ),
         ),
-      ));
+      );
       await tester.pump();
 
       // During analysis (_isAnalyzing=true), the explanatory text should be visible
@@ -182,18 +198,21 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('updates status message to "Envoi de l\'image"',
-        (tester) async {
+    testWidgets('updates status message to "Envoi de l\'image"', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      await tester.pumpWidget(MaterialApp(
-        home: PlantIdentificationPage(
-          imageBytes: _validPng,
-          geminiService: createErrorGeminiService(),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PlantIdentificationPage(
+            imageBytes: _validPng,
+            geminiService: createErrorGeminiService(),
+          ),
         ),
-      ));
+      );
 
       // Right after build, first setState changes to "Envoi de l'image"
       await tester.pump();
@@ -204,19 +223,23 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('on success, shows "Plante identifiee" before navigating',
-        (tester) async {
+    testWidgets('on success, shows "Plante identifiee" before navigating', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       // Suppress all errors (navigation to AddPlantPage may fail without full mocks)
       FlutterError.onError = (details) {};
 
-      await tester.pumpWidget(MaterialApp(
-        home: PlantIdentificationPage(
-          imageBytes: _validPng,
-          geminiService: createSuccessGeminiService(),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PlantIdentificationPage(
+            imageBytes: _validPng,
+            geminiService: createSuccessGeminiService(),
+            addPlantPageBuilder: mockAddPlantPage,
+          ),
         ),
-      ));
+      );
 
       // Process the Future.delayed(500ms) + API call
       await tester.pump(const Duration(milliseconds: 600));
@@ -224,13 +247,12 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      // After success, shows "Plante identifiee" and check circle
-      expect(find.textContaining('identifiee'), findsWidgets);
+      expect(find.text('Plante identifiee !'), findsOneWidget);
 
       // Pump past the 800ms post-success delay and navigation
       await tester.pump(const Duration(seconds: 1));
-      await tester.pump(const Duration(seconds: 1));
       await tester.pump();
+      expect(find.text('Mock add plant page'), findsOneWidget);
     });
 
     testWidgets('on error, shows error dialog with options', (tester) async {
@@ -238,12 +260,15 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      await tester.pumpWidget(MaterialApp(
-        home: PlantIdentificationPage(
-          imageBytes: _validPng,
-          geminiService: createErrorGeminiService(),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PlantIdentificationPage(
+            imageBytes: _validPng,
+            geminiService: createErrorGeminiService(),
+            addPlantPageBuilder: mockAddPlantPage,
+          ),
         ),
-      ));
+      );
 
       await pumpUntilErrorDialog(tester);
 
@@ -260,19 +285,21 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      await tester.pumpWidget(MaterialApp(
-        home: Navigator(
-          onGenerateRoute: (settings) => MaterialPageRoute(
-            builder: (context) => PlantIdentificationPage(
-              imageBytes: _validPng,
-              geminiService: createErrorGeminiService(),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Navigator(
+            onGenerateRoute: (settings) => MaterialPageRoute(
+              builder: (context) => PlantIdentificationPage(
+                imageBytes: _validPng,
+                geminiService: createErrorGeminiService(),
+              ),
             ),
+            onPopPage: (route, result) {
+              return route.didPop(result);
+            },
           ),
-          onPopPage: (route, result) {
-            return route.didPop(result);
-          },
         ),
-      ));
+      );
 
       await pumpUntilErrorDialog(tester);
 
@@ -284,18 +311,21 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('error dialog "Saisie manuelle" navigates to add plant',
-        (tester) async {
+    testWidgets('error dialog "Saisie manuelle" navigates to add plant', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      await tester.pumpWidget(MaterialApp(
-        home: PlantIdentificationPage(
-          imageBytes: _validPng,
-          geminiService: createErrorGeminiService(),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PlantIdentificationPage(
+            imageBytes: _validPng,
+            geminiService: createErrorGeminiService(),
+          ),
         ),
-      ));
+      );
 
       await pumpUntilErrorDialog(tester);
 
@@ -304,24 +334,26 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Should navigate to AddPlantPage
       expect(find.byType(Scaffold), findsWidgets);
 
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('shows "Identification impossible" status on error',
-        (tester) async {
+    testWidgets('shows "Identification impossible" status on error', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      await tester.pumpWidget(MaterialApp(
-        home: PlantIdentificationPage(
-          imageBytes: _validPng,
-          geminiService: createErrorGeminiService(),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PlantIdentificationPage(
+            imageBytes: _validPng,
+            geminiService: createErrorGeminiService(),
+          ),
         ),
-      ));
+      );
 
       await pumpUntilErrorDialog(tester);
 
@@ -337,12 +369,14 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      await tester.pumpWidget(MaterialApp(
-        home: PlantIdentificationPage(
-          imageBytes: _validPng,
-          geminiService: createThrowingGeminiService(),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PlantIdentificationPage(
+            imageBytes: _validPng,
+            geminiService: createThrowingGeminiService(),
+          ),
         ),
-      ));
+      );
 
       await pumpUntilErrorDialog(tester);
 
@@ -359,12 +393,14 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      await tester.pumpWidget(MaterialApp(
-        home: PlantIdentificationPage(
-          imageBytes: _validPng,
-          geminiService: createErrorGeminiService(),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PlantIdentificationPage(
+            imageBytes: _validPng,
+            geminiService: createErrorGeminiService(),
+          ),
         ),
-      ));
+      );
 
       await pumpUntilErrorDialog(tester);
 

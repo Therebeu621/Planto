@@ -164,10 +164,13 @@ class _IotSensorsPageState extends State<IotSensorsPage> {
                     ),
                   ),
                   if (sensor['lastValue'] != null)
-                    Text(
-                      '${sensor['lastValue']} ${sensor['unit'] ?? ''}',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,
-                          color: _typeColors[sensor['sensorType']] ?? Colors.grey),
+                    Flexible(
+                      child: Text(
+                        '${sensor['lastValue']} ${sensor['unit'] ?? ''}',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,
+                            color: _typeColors[sensor['sensorType']] ?? Colors.grey),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                 ],
               ),
@@ -297,6 +300,8 @@ class _IotSensorsPageState extends State<IotSensorsPage> {
                     Text(
                       '${sensor['lastValue']}',
                       style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                     Text(
                       sensor['unit'] ?? '',

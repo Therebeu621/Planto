@@ -100,8 +100,8 @@ void main() {
       expect(makeLog('TREATMENT').actionDisplay, 'Traitement');
     });
 
-    test('NOTE -> Note', () {
-      expect(makeLog('NOTE').actionDisplay, 'Note');
+    test('NOTE -> Memo', () {
+      expect(makeLog('NOTE').actionDisplay, 'Memo');
     });
 
     test('unknown action returns itself', () {

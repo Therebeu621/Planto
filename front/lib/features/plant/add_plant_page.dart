@@ -8,6 +8,7 @@ import 'package:planto/core/services/plant_service.dart';
 import 'package:planto/core/services/room_service.dart';
 import 'package:planto/core/services/species_service.dart';
 import 'package:planto/core/theme/app_theme.dart';
+import 'package:planto/core/utils/api_error_formatter.dart';
 
 class AddPlantPage extends StatefulWidget {
   /// Donnees pre-remplies par l'IA (optionnel)
@@ -34,18 +35,21 @@ class AddPlantPage extends StatefulWidget {
 }
 
 class _AddPlantPageState extends State<AddPlantPage> {
+  static const double _maxPotDiameterCm = 200.0;
+
   final _formKey = GlobalKey<FormState>();
   late final PlantService _plantService = widget.plantService ?? PlantService();
   late final RoomService _roomService = widget.roomService ?? RoomService();
-  late final SpeciesService _speciesService = widget.speciesService ?? SpeciesService();
+  late final SpeciesService _speciesService =
+      widget.speciesService ?? SpeciesService();
 
   String _nickname = '';
   String? _roomId;
   int _wateringInterval = 7;
   String _exposure = 'PARTIAL_SHADE';
   String? _selectedSpeciesId;
-  PlantResult? _selectedPlant;  // Selected plant from database
-  
+  PlantResult? _selectedPlant; // Selected plant from database
+
   // Health flags
   bool _isSick = false;
   bool _isWilted = false;
@@ -70,24 +74,69 @@ class _AddPlantPageState extends State<AddPlantPage> {
   final TextEditingController _speciesController = TextEditingController();
   final FocusNode _speciesFocusNode = FocusNode();
   final GlobalKey _nicknameFieldKey = GlobalKey();
-  List<PlantResult> _plantSuggestions = [];  // Plant search results
+  List<PlantResult> _plantSuggestions = []; // Plant search results
   bool _isSearchingSpecies = false;
   bool _showSpeciesSuggestions = false;
   Timer? _debounceTimer;
 
   final List<Map<String, dynamic>> _exposureOptions = [
-    {'value': 'SUN', 'label': 'Plein soleil', 'icon': Icons.wb_sunny, 'color': Colors.orange},
-    {'value': 'PARTIAL_SHADE', 'label': 'Mi-ombre', 'icon': Icons.wb_cloudy, 'color': Colors.blueGrey},
-    {'value': 'SHADE', 'label': 'Ombre', 'icon': Icons.nights_stay, 'color': Colors.indigo},
+    {
+      'value': 'SUN',
+      'label': 'Plein soleil',
+      'icon': Icons.wb_sunny,
+      'color': Colors.orange,
+    },
+    {
+      'value': 'PARTIAL_SHADE',
+      'label': 'Mi-ombre',
+      'icon': Icons.wb_cloudy,
+      'color': Colors.blueGrey,
+    },
+    {
+      'value': 'SHADE',
+      'label': 'Ombre',
+      'icon': Icons.nights_stay,
+      'color': Colors.indigo,
+    },
   ];
 
   final List<Map<String, dynamic>> _lastWateredOptions = [
-    {'value': 'today', 'label': 'Aujourd\'hui', 'icon': Icons.water_drop, 'days': 0},
-    {'value': 'yesterday', 'label': 'Hier', 'icon': Icons.water_drop_outlined, 'days': 1},
-    {'value': 'few_days', 'label': 'Il y a 2-3 jours', 'icon': Icons.schedule, 'days': 3},
-    {'value': 'week', 'label': 'Il y a ~1 semaine', 'icon': Icons.date_range, 'days': 7},
-    {'value': 'long_ago', 'label': 'Plus longtemps', 'icon': Icons.history, 'days': 14},
-    {'value': 'unknown', 'label': 'Je ne sais pas', 'icon': Icons.help_outline, 'days': null},
+    {
+      'value': 'today',
+      'label': 'Aujourd\'hui',
+      'icon': Icons.water_drop,
+      'days': 0,
+    },
+    {
+      'value': 'yesterday',
+      'label': 'Hier',
+      'icon': Icons.water_drop_outlined,
+      'days': 1,
+    },
+    {
+      'value': 'few_days',
+      'label': 'Il y a 2-3 jours',
+      'icon': Icons.schedule,
+      'days': 3,
+    },
+    {
+      'value': 'week',
+      'label': 'Il y a ~1 semaine',
+      'icon': Icons.date_range,
+      'days': 7,
+    },
+    {
+      'value': 'long_ago',
+      'label': 'Plus longtemps',
+      'icon': Icons.history,
+      'days': 14,
+    },
+    {
+      'value': 'unknown',
+      'label': 'Je ne sais pas',
+      'icon': Icons.help_outline,
+      'days': null,
+    },
   ];
 
   @override
@@ -125,8 +174,40 @@ class _AddPlantPageState extends State<AddPlantPage> {
     _nicknameController.dispose();
     _speciesController.dispose();
     _speciesFocusNode.dispose();
+    _potDiameterController.dispose();
     _debounceTimer?.cancel();
     super.dispose();
+  }
+
+  double? _parsePotDiameter(String? rawValue) {
+    final normalized = rawValue?.trim().replaceAll(',', '.') ?? '';
+    if (normalized.isEmpty) return null;
+    return double.tryParse(normalized);
+  }
+
+  String? _validatePotDiameter(String? rawValue) {
+    final normalized = rawValue?.trim().replaceAll(',', '.') ?? '';
+    if (normalized.isEmpty) return null;
+
+    final diameter = double.tryParse(normalized);
+    if (diameter == null) {
+      return 'Entrez un nombre valide';
+    }
+
+    final parts = normalized.split('.');
+    if (parts.length > 1 && parts[1].length > 1) {
+      return 'Un seul chiffre apres la virgule est autorise';
+    }
+
+    if (diameter <= 0) {
+      return 'Le diametre du pot doit etre superieur a 0';
+    }
+
+    if (diameter > _maxPotDiameterCm) {
+      return 'Le diametre du pot doit etre inferieur ou egal a 200 cm';
+    }
+
+    return null;
   }
 
   Future<void> _loadRooms() async {
@@ -145,7 +226,10 @@ class _AddPlantPageState extends State<AddPlantPage> {
       if (mounted) {
         setState(() => _isLoadingRooms = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(formatApiError(e)),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -201,7 +285,7 @@ class _AddPlantPageState extends State<AddPlantPage> {
       _exposure = plant.getExposureValue();
     });
     _speciesFocusNode.unfocus();
-    
+
     // Show confirmation toast
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -285,10 +369,16 @@ class _AddPlantPageState extends State<AddPlantPage> {
                   color: AppTheme.primaryColor.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.photo_library, color: AppTheme.primaryColor),
+                child: const Icon(
+                  Icons.photo_library,
+                  color: AppTheme.primaryColor,
+                ),
               ),
               title: const Text('Choisir depuis la galerie'),
-              subtitle: Text('Selectionnez une photo existante', style: TextStyle(color: AppTheme.textGrey(context))),
+              subtitle: Text(
+                'Selectionnez une photo existante',
+                style: TextStyle(color: AppTheme.textGrey(context)),
+              ),
               onTap: () => Navigator.pop(context, 'gallery'),
             ),
             ListTile(
@@ -301,7 +391,10 @@ class _AddPlantPageState extends State<AddPlantPage> {
                 child: const Icon(Icons.camera_alt, color: Colors.blue),
               ),
               title: const Text('Prendre une photo'),
-              subtitle: Text('Utilisez l\'appareil photo', style: TextStyle(color: AppTheme.textGrey(context))),
+              subtitle: Text(
+                'Utilisez l\'appareil photo',
+                style: TextStyle(color: AppTheme.textGrey(context)),
+              ),
               onTap: () => Navigator.pop(context, 'camera'),
             ),
             if (_selectedPhotoBytes != null)
@@ -314,7 +407,10 @@ class _AddPlantPageState extends State<AddPlantPage> {
                   ),
                   child: const Icon(Icons.delete, color: Colors.red),
                 ),
-                title: const Text('Supprimer la photo', style: TextStyle(color: Colors.red)),
+                title: const Text(
+                  'Supprimer la photo',
+                  style: TextStyle(color: Colors.red),
+                ),
                 onTap: () => Navigator.pop(context, 'delete'),
               ),
             const SizedBox(height: 16),
@@ -380,7 +476,8 @@ class _AddPlantPageState extends State<AddPlantPage> {
     try {
       final speciesText = _speciesController.text.trim();
       // Only use speciesId if it's a valid UUID (not perenual_xxx or unknown_xxx)
-      final isValidUuid = _selectedSpeciesId != null &&
+      final isValidUuid =
+          _selectedSpeciesId != null &&
           !_selectedSpeciesId!.startsWith('perenual_') &&
           !_selectedSpeciesId!.startsWith('unknown_');
 
@@ -391,21 +488,25 @@ class _AddPlantPageState extends State<AddPlantPage> {
         wateringIntervalDays: _wateringInterval,
         exposure: _exposure,
         speciesId: isValidUuid ? _selectedSpeciesId : null,
-        customSpecies: !isValidUuid && speciesText.isNotEmpty ? speciesText : null,
+        customSpecies: !isValidUuid && speciesText.isNotEmpty
+            ? speciesText
+            : null,
         isSick: _isSick,
         isWilted: _isWilted,
         needsRepotting: _needsRepotting,
-        potDiameterCm: _potDiameterController.text.isNotEmpty
-            ? double.tryParse(_potDiameterController.text)
-            : null,
+        potDiameterCm: _parsePotDiameter(_potDiameterController.text),
         lastWatered: _getLastWateredDate(),
       );
 
       // Upload photo if selected
-      debugPrint('AddPlantPage: Photo bytes = ${_selectedPhotoBytes?.length}, name = $_selectedPhotoName');
+      debugPrint(
+        'AddPlantPage: Photo bytes = ${_selectedPhotoBytes?.length}, name = $_selectedPhotoName',
+      );
       if (_selectedPhotoBytes != null && _selectedPhotoName != null) {
         try {
-          debugPrint('AddPlantPage: Uploading photo for plant ${createdPlant.id}...');
+          debugPrint(
+            'AddPlantPage: Uploading photo for plant ${createdPlant.id}...',
+          );
           await _plantService.uploadPlantPhoto(
             createdPlant.id,
             _selectedPhotoBytes!,
@@ -418,7 +519,9 @@ class _AddPlantPageState extends State<AddPlantPage> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Plante creee, mais erreur photo: $photoError'),
+                content: Text(
+                  'Plante creee, mais erreur photo: ${formatApiError(photoError)}',
+                ),
                 backgroundColor: Colors.orange,
               ),
             );
@@ -434,7 +537,10 @@ class _AddPlantPageState extends State<AddPlantPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(formatApiError(e)),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -447,7 +553,9 @@ class _AddPlantPageState extends State<AddPlantPage> {
     return Scaffold(
       backgroundColor: AppTheme.scaffoldBg(context),
       body: _isLoadingRooms
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppTheme.primaryColor),
+            )
           : CustomScrollView(
               slivers: [
                 // Custom App Bar with plant image
@@ -462,7 +570,11 @@ class _AddPlantPageState extends State<AddPlantPage> {
                         color: AppTheme.overlayWhite(context, 0.2),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                      child: const Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                     onPressed: () => Navigator.pop(context),
                   ),
@@ -539,10 +651,10 @@ class _AddPlantPageState extends State<AddPlantPage> {
                                                 ),
                                               )
                                             : const Icon(
-                                                    Icons.eco,
-                                                    size: 45,
-                                                    color: AppTheme.primaryColor,
-                                                  ),
+                                                Icons.eco,
+                                                size: 45,
+                                                color: AppTheme.primaryColor,
+                                              ),
                                       ),
                                       // Camera icon overlay
                                       Positioned(
@@ -553,13 +665,16 @@ class _AddPlantPageState extends State<AddPlantPage> {
                                           decoration: BoxDecoration(
                                             color: AppTheme.primaryColor,
                                             shape: BoxShape.circle,
-                                            border: Border.all(color: Colors.white, width: 2),
+                                            border: Border.all(
+                                              color: Colors.white,
+                                              width: 2,
+                                            ),
                                           ),
                                           child: const Icon(
-                                                  Icons.camera_alt,
-                                                  size: 16,
-                                                  color: Colors.white,
-                                                ),
+                                            Icons.camera_alt,
+                                            size: 16,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -567,7 +682,8 @@ class _AddPlantPageState extends State<AddPlantPage> {
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
-                                  _selectedPlant?.nomFrancais ?? 'Nouvelle plante',
+                                  _selectedPlant?.nomFrancais ??
+                                      'Nouvelle plante',
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 18,
@@ -578,7 +694,10 @@ class _AddPlantPageState extends State<AddPlantPage> {
                                   Text(
                                     'Touchez pour ajouter une photo',
                                     style: TextStyle(
-                                      color: AppTheme.overlayWhite(context, 0.8),
+                                      color: AppTheme.overlayWhite(
+                                        context,
+                                        0.8,
+                                      ),
                                       fontSize: 12,
                                     ),
                                   ),
@@ -617,16 +736,28 @@ class _AddPlantPageState extends State<AddPlantPage> {
                               icon: Icons.favorite_outline,
                               controller: _nicknameController,
                               validator: (v) {
-                                if (v?.isEmpty ?? true) return 'Donnez un nom a votre plante';
+                                final trimmed = v?.trim() ?? '';
+                                if (trimmed.isEmpty)
+                                  return 'Donnez un nom a votre plante';
+                                if (trimmed.length > 100) {
+                                  return 'Le petit nom doit contenir au maximum 100 caracteres';
+                                }
                                 if (_roomId != null) {
-                                  final room = _rooms.where((r) => r.id == _roomId).firstOrNull;
-                                  if (room != null && room.plants.any((p) => p.nickname.toLowerCase() == v!.trim().toLowerCase())) {
+                                  final room = _rooms
+                                      .where((r) => r.id == _roomId)
+                                      .firstOrNull;
+                                  if (room != null &&
+                                      room.plants.any(
+                                        (p) =>
+                                            p.nickname.toLowerCase() ==
+                                            trimmed.toLowerCase(),
+                                      )) {
                                     return 'Une plante avec ce nom existe deja dans cette piece';
                                   }
                                 }
                                 return null;
                               },
-                              onSaved: (v) => _nickname = v!,
+                              onSaved: (v) => _nickname = v!.trim(),
                             ),
                             const SizedBox(height: 16),
                             _buildSpeciesField(),
@@ -635,29 +766,36 @@ class _AddPlantPageState extends State<AddPlantPage> {
                           const SizedBox(height: 24),
 
                           // Section: Photo
-                          _buildSectionTitle('Photo', Icons.photo_camera_outlined),
+                          _buildSectionTitle(
+                            'Photo',
+                            Icons.photo_camera_outlined,
+                          ),
                           const SizedBox(height: 12),
                           _buildPhotoSection(),
 
                           const SizedBox(height: 24),
 
-                          // Section: Recommendation (if plant selected)
-                          if (_selectedPlant != null) ...[
+                          // Section: Recommendation (if plant selected or AI data)
+                          if (_selectedPlant != null || (_hasAiRecommendations)) ...[
                             _buildRecommendationCard(),
                             const SizedBox(height: 24),
                           ],
 
                           // Section: Emplacement
-                          _buildSectionTitle('Emplacement', Icons.location_on_outlined),
+                          _buildSectionTitle(
+                            'Emplacement',
+                            Icons.location_on_outlined,
+                          ),
                           const SizedBox(height: 12),
-                          _buildCard([
-                            _buildRoomSelector(),
-                          ]),
+                          _buildCard([_buildRoomSelector()]),
 
                           const SizedBox(height: 24),
 
                           // Section: Conditions
-                          _buildSectionTitle('Conditions', Icons.settings_outlined),
+                          _buildSectionTitle(
+                            'Conditions',
+                            Icons.settings_outlined,
+                          ),
                           const SizedBox(height: 12),
                           _buildCard([
                             _buildExposureSelector(),
@@ -672,25 +810,44 @@ class _AddPlantPageState extends State<AddPlantPage> {
                           const SizedBox(height: 24),
 
                           // Section: Dernier arrosage
-                          _buildSectionTitle('Historique', Icons.history_outlined),
+                          _buildSectionTitle(
+                            'Historique',
+                            Icons.history_outlined,
+                          ),
                           const SizedBox(height: 12),
-                          _buildCard([
-                            _buildLastWateredSelector(),
-                          ]),
+                          _buildCard([_buildLastWateredSelector()]),
 
                           const SizedBox(height: 24),
 
                           // Warnings section removed - will handle with plantEnrichment if needed
 
                           // Section: Etat de sante
-                          _buildSectionTitle('Etat de sante', Icons.healing_outlined),
+                          _buildSectionTitle(
+                            'Etat de sante',
+                            Icons.healing_outlined,
+                          ),
                           const SizedBox(height: 12),
                           _buildCard([
-                            _buildSwitch('Malade', 'La plante a-t-elle des parasites ou maladies ?', _isSick, (v) => setState(() => _isSick = v)),
+                            _buildSwitch(
+                              'Malade',
+                              'La plante a-t-elle des parasites ou maladies ?',
+                              _isSick,
+                              (v) => setState(() => _isSick = v),
+                            ),
                             const Divider(),
-                            _buildSwitch('Fanee', 'Les feuilles sont-elles molles ou tombantes ?', _isWilted, (v) => setState(() => _isWilted = v)),
+                            _buildSwitch(
+                              'Fanee',
+                              'Les feuilles sont-elles molles ou tombantes ?',
+                              _isWilted,
+                              (v) => setState(() => _isWilted = v),
+                            ),
                             const Divider(),
-                            _buildSwitch('A rempoter', 'Le pot est-il devenu trop petit ?', _needsRepotting, (v) => setState(() => _needsRepotting = v)),
+                            _buildSwitch(
+                              'A rempoter',
+                              'Le pot est-il devenu trop petit ?',
+                              _needsRepotting,
+                              (v) => setState(() => _needsRepotting = v),
+                            ),
                           ]),
 
                           const SizedBox(height: 24),
@@ -701,7 +858,13 @@ class _AddPlantPageState extends State<AddPlantPage> {
                           _buildCard([
                             TextFormField(
                               controller: _potDiameterController,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              validator: (value) {
+                                return _validatePotDiameter(value);
+                              },
                               decoration: InputDecoration(
                                 labelText: 'Diametre du pot (cm)',
                                 hintText: 'Ex: 14',
@@ -710,7 +873,9 @@ class _AddPlantPageState extends State<AddPlantPage> {
                                 border: InputBorder.none,
                                 enabledBorder: InputBorder.none,
                                 focusedBorder: UnderlineInputBorder(
-                                  borderSide: BorderSide(color: AppTheme.primaryColor),
+                                  borderSide: BorderSide(
+                                    color: AppTheme.primaryColor,
+                                  ),
                                 ),
                               ),
                             ),
@@ -738,10 +903,7 @@ class _AddPlantPageState extends State<AddPlantPage> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.purple.shade50,
-            Colors.blue.shade50,
-          ],
+          colors: [Colors.purple.shade50, Colors.blue.shade50],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.purple.withOpacity(0.3)),
@@ -771,7 +933,8 @@ class _AddPlantPageState extends State<AddPlantPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  widget.aiData?.description ?? 'Verifiez et ajustez les informations si necessaire.',
+                  widget.aiData?.description ??
+                      'Verifiez et ajustez les informations si necessaire.',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppTheme.textGrey(context),
@@ -976,10 +1139,7 @@ class _AddPlantPageState extends State<AddPlantPage> {
             const SizedBox(height: 8),
             Text(
               label,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(color: color, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -1028,13 +1188,19 @@ class _AddPlantPageState extends State<AddPlantPage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+              borderSide: const BorderSide(
+                color: AppTheme.primaryColor,
+                width: 2,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Colors.red, width: 1),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
           ),
           validator: validator,
           onSaved: onSaved,
@@ -1063,16 +1229,16 @@ class _AddPlantPageState extends State<AddPlantPage> {
           decoration: InputDecoration(
             hintText: 'Rechercher ou saisir...',
             hintStyle: TextStyle(color: AppTheme.textGrey(context)),
-            prefixIcon: const Icon(Icons.search, color: AppTheme.primaryColor, size: 22),
+            prefixIcon: const Icon(
+              Icons.search,
+              color: AppTheme.primaryColor,
+              size: 22,
+            ),
             suffixIcon: _isSearchingSpecies
-                ? const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: SizedBox(
-                    ),
-                  )
+                ? const Padding(padding: EdgeInsets.all(12), child: SizedBox())
                 : _selectedPlant != null
-                    ? const Icon(Icons.check_circle, color: AppTheme.successColor)
-                    : null,
+                ? const Icon(Icons.check_circle, color: AppTheme.successColor)
+                : null,
             filled: true,
             fillColor: AppTheme.inputFill(context),
             border: OutlineInputBorder(
@@ -1081,73 +1247,110 @@ class _AddPlantPageState extends State<AddPlantPage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+              borderSide: const BorderSide(
+                color: AppTheme.primaryColor,
+                width: 2,
+              ),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
           ),
           onChanged: _onSpeciesSearchChanged,
         ),
         if (_selectedPlant != null)
           Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.eco, size: 14, color: AppTheme.primaryColor),
-                      const SizedBox(width: 4),
-                      Text(
-                        _selectedPlant!.nomLatin,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.primaryColor,
-                          fontStyle: FontStyle.italic,
-                        ),
+            child: LayoutBuilder(
+              builder: (context, constraints) => Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
                       ),
-                    ],
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.eco,
+                            size: 14,
+                            color: AppTheme.primaryColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              _selectedPlant!.nomLatin,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.primaryColor,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${_selectedPlant!.arrosageFrequenceJours}j',
+                      style: const TextStyle(fontSize: 11, color: Colors.blue),
+                    ),
                   ),
-                  child: Text(
-                    '${_selectedPlant!.arrosageFrequenceJours}j',
-                    style: const TextStyle(fontSize: 11, color: Colors.blue),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _getExposureColor(_selectedPlant!.luminosite).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(_getExposureIcon(_selectedPlant!.luminosite), 
-                           size: 12, 
-                           color: _getExposureColor(_selectedPlant!.luminosite)),
-                      const SizedBox(width: 2),
-                      Text(
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _getExposureColor(
                         _selectedPlant!.luminosite,
-                        style: TextStyle(fontSize: 11, color: _getExposureColor(_selectedPlant!.luminosite)),
-                      ),
-                    ],
+                      ).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _getExposureIcon(_selectedPlant!.luminosite),
+                          size: 12,
+                          color: _getExposureColor(_selectedPlant!.luminosite),
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          _selectedPlant!.luminosite,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: _getExposureColor(
+                              _selectedPlant!.luminosite,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         // Suggestions dropdown
@@ -1171,7 +1374,8 @@ class _AddPlantPageState extends State<AddPlantPage> {
               shrinkWrap: true,
               padding: EdgeInsets.zero,
               itemCount: _plantSuggestions.length,
-              separatorBuilder: (_, __) => Divider(height: 1, color: AppTheme.borderLight(context)),
+              separatorBuilder: (_, __) =>
+                  Divider(height: 1, color: AppTheme.borderLight(context)),
               itemBuilder: (context, index) {
                 final plant = _plantSuggestions[index];
                 return ListTile(
@@ -1185,10 +1389,16 @@ class _AddPlantPageState extends State<AddPlantPage> {
                     ),
                     child: const Icon(Icons.eco, color: AppTheme.primaryColor),
                   ),
-                  title: Text(plant.nomFrancais, style: const TextStyle(fontWeight: FontWeight.w500)),
+                  title: Text(
+                    plant.nomFrancais,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
                   subtitle: Text(
                     '${plant.nomLatin} • ${plant.arrosageFrequenceJours}j • ${plant.luminosite}',
-                    style: TextStyle(fontSize: 11, color: AppTheme.textGrey(context)),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.textGrey(context),
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1232,28 +1442,36 @@ class _AddPlantPageState extends State<AddPlantPage> {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppTheme.primaryColor : AppTheme.inputFill(context),
+                  color: isSelected
+                      ? AppTheme.primaryColor
+                      : AppTheme.inputFill(context),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSelected ? AppTheme.primaryColor : AppTheme.divider(context),
+                    color: isSelected
+                        ? AppTheme.primaryColor
+                        : AppTheme.divider(context),
                     width: isSelected ? 2 : 1,
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      room.icon,
-                      style: const TextStyle(fontSize: 18),
-                    ),
+                    Text(room.icon, style: const TextStyle(fontSize: 18)),
                     const SizedBox(width: 8),
                     Text(
                       room.name,
                       style: TextStyle(
-                        color: isSelected ? Colors.white : AppTheme.textGreyDark(context),
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        color: isSelected
+                            ? Colors.white
+                            : AppTheme.textGreyDark(context),
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                       ),
                     ),
                   ],
@@ -1292,10 +1510,14 @@ class _AddPlantPageState extends State<AddPlantPage> {
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   decoration: BoxDecoration(
-                    color: isSelected ? (option['color'] as Color).withOpacity(0.15) : AppTheme.inputFill(context),
+                    color: isSelected
+                        ? (option['color'] as Color).withOpacity(0.15)
+                        : AppTheme.inputFill(context),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isSelected ? option['color'] as Color : AppTheme.divider(context),
+                      color: isSelected
+                          ? option['color'] as Color
+                          : AppTheme.divider(context),
                       width: isSelected ? 2 : 1,
                     ),
                   ),
@@ -1303,7 +1525,9 @@ class _AddPlantPageState extends State<AddPlantPage> {
                     children: [
                       Icon(
                         option['icon'] as IconData,
-                        color: isSelected ? option['color'] as Color : AppTheme.textGrey(context),
+                        color: isSelected
+                            ? option['color'] as Color
+                            : AppTheme.textGrey(context),
                         size: 28,
                       ),
                       const SizedBox(height: 6),
@@ -1312,8 +1536,12 @@ class _AddPlantPageState extends State<AddPlantPage> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 11,
-                          color: isSelected ? option['color'] as Color : AppTheme.textGrey(context),
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                          color: isSelected
+                              ? option['color'] as Color
+                              : AppTheme.textGrey(context),
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
                         ),
                       ),
                     ],
@@ -1381,14 +1609,21 @@ class _AddPlantPageState extends State<AddPlantPage> {
             min: 1,
             max: 30,
             divisions: 29,
-            onChanged: (value) => setState(() => _wateringInterval = value.round()),
+            onChanged: (value) =>
+                setState(() => _wateringInterval = value.round()),
           ),
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Quotidien', style: TextStyle(fontSize: 11, color: AppTheme.textGrey(context))),
-            Text('Mensuel', style: TextStyle(fontSize: 11, color: AppTheme.textGrey(context))),
+            Text(
+              'Quotidien',
+              style: TextStyle(fontSize: 11, color: AppTheme.textGrey(context)),
+            ),
+            Text(
+              'Mensuel',
+              style: TextStyle(fontSize: 11, color: AppTheme.textGrey(context)),
+            ),
           ],
         ),
       ],
@@ -1414,7 +1649,10 @@ class _AddPlantPageState extends State<AddPlantPage> {
             ? const SizedBox(
                 width: 24,
                 height: 24,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2.5,
+                ),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1435,10 +1673,21 @@ class _AddPlantPageState extends State<AddPlantPage> {
     );
   }
 
-  Widget _buildSwitch(String title, String subtitle, bool value, ValueChanged<bool> onChanged) {
+  Widget _buildSwitch(
+    String title,
+    String subtitle,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
     return SwitchListTile(
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
-      subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: AppTheme.textGrey(context))),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(fontSize: 12, color: AppTheme.textGrey(context)),
+      ),
       value: value,
       onChanged: onChanged,
       activeColor: AppTheme.primaryColor,
@@ -1448,21 +1697,25 @@ class _AddPlantPageState extends State<AddPlantPage> {
   }
 
   Widget _buildRecommendationCard() {
-    if (_selectedPlant == null) return const SizedBox.shrink();
-    
-    final plant = _selectedPlant!;
-    const accentColor = AppTheme.primaryColor;
-    
+    // Works with local plant selection OR AI data
+    final bool isFromAi = _selectedPlant == null && widget.aiData != null;
+    if (_selectedPlant == null && !isFromAi) return const SizedBox.shrink();
+
+    final String plantName = _selectedPlant?.nomFrancais ?? widget.aiData!.espece;
+    final int wateringDays = _selectedPlant?.arrosageFrequenceJours ?? widget.aiData!.arrosageJours;
+    final String luminosite = _selectedPlant?.luminosite ?? widget.aiData!.luminosite;
+    final String? nomLatin = _selectedPlant?.nomLatin;
+
+    final accentColor = isFromAi ? Colors.purple : AppTheme.primaryColor;
+    final gradientEnd = isFromAi ? Colors.purple.shade50 : Colors.blue.shade50;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            accentColor.withOpacity(0.1),
-            Colors.blue.shade50,
-          ],
+          colors: [accentColor.withOpacity(0.1), gradientEnd],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: accentColor.withOpacity(0.3)),
@@ -1478,9 +1731,9 @@ class _AddPlantPageState extends State<AddPlantPage> {
                   color: accentColor.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.lightbulb_outline, 
-                  color: accentColor, 
+                child: Icon(
+                  isFromAi ? Icons.auto_awesome : Icons.lightbulb_outline,
+                  color: accentColor,
                   size: 20,
                 ),
               ),
@@ -1489,8 +1742,8 @@ class _AddPlantPageState extends State<AddPlantPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Recommandations',
+                    Text(
+                      isFromAi ? 'Recommandations IA' : 'Recommandations',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -1498,7 +1751,7 @@ class _AddPlantPageState extends State<AddPlantPage> {
                       ),
                     ),
                     Text(
-                      'Pour ${plant.nomFrancais}',
+                      'Pour $plantName',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppTheme.textGrey(context),
@@ -1510,33 +1763,34 @@ class _AddPlantPageState extends State<AddPlantPage> {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Care info chips
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
               _buildInfoChip(
-                Icons.water_drop_outlined, 
-                'Tous les ${plant.arrosageFrequenceJours} jours',
+                Icons.water_drop_outlined,
+                'Tous les $wateringDays jours',
                 Colors.blue,
               ),
               _buildInfoChip(
-                _getSunlightIcon(plant.luminosite),
-                plant.luminosite,
+                _getSunlightIcon(luminosite),
+                luminosite,
                 Colors.orange,
               ),
-              _buildInfoChip(
-                Icons.science_outlined,
-                plant.nomLatin,
-                AppTheme.primaryColor,
-              ),
+              if (nomLatin != null)
+                _buildInfoChip(
+                  Icons.science_outlined,
+                  nomLatin,
+                  AppTheme.primaryColor,
+                ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
           Text(
-            'Vous pouvez ajuster ces paramètres selon vos conditions.',
+            'Vous pouvez ajuster ces parametres selon vos conditions.',
             style: TextStyle(
               fontSize: 11,
               fontStyle: FontStyle.italic,
@@ -1589,22 +1843,44 @@ class _AddPlantPageState extends State<AddPlantPage> {
 
   IconData _getSunlightIcon(String sunlight) {
     final lower = sunlight.toLowerCase();
-    if (lower.contains('soleil') || lower.contains('sun')) return Icons.wb_sunny;
-    if (lower.contains('ombre') && !lower.contains('mi')) return Icons.nights_stay;
+    if (lower.contains('soleil') || lower.contains('sun'))
+      return Icons.wb_sunny;
+    if (lower.contains('ombre') && !lower.contains('mi'))
+      return Icons.nights_stay;
     return Icons.wb_cloudy;
   }
 
-  /// Get list of warnings based on user choices vs recommendations
+  /// Whether we have AI recommendations to compare against (and no local plant selected)
+  bool get _hasAiRecommendations => _selectedPlant == null && widget.aiData != null;
+
+  /// Get recommended exposure from either local plant or AI data
+  String? get _recommendedExposure {
+    if (_selectedPlant != null) return _selectedPlant!.getExposureValue();
+    if (widget.aiData != null) return widget.aiData!.exposureValue;
+    return null;
+  }
+
+  /// Get recommended watering interval from either local plant or AI data
+  int? get _recommendedWateringInterval {
+    if (_selectedPlant != null) return _selectedPlant!.arrosageFrequenceJours;
+    if (widget.aiData != null) return widget.aiData!.arrosageJours;
+    return null;
+  }
+
+  /// Get list of warnings based on user choices vs recommendations (local DB or AI)
   List<Map<String, dynamic>> _getWarnings() {
-    if (_selectedPlant == null) return [];
+    if (_selectedPlant == null && widget.aiData == null) return [];
 
     final warnings = <Map<String, dynamic>>[];
-    final plant = _selectedPlant!;
+    final source = _selectedPlant != null ? 'la base de donnees' : 'l\'IA';
 
     // Check exposure mismatch
-    final recommendedExposure = plant.getExposureValue();
-    if (_exposure != recommendedExposure) {
-      final exposureSeverity = _getExposureMismatchSeverity(recommendedExposure, _exposure);
+    final recommendedExposure = _recommendedExposure;
+    if (recommendedExposure != null && _exposure != recommendedExposure) {
+      final exposureSeverity = _getExposureMismatchSeverity(
+        recommendedExposure,
+        _exposure,
+      );
       if (exposureSeverity != null) {
         final recommendedLabel = _getExposureLabel(recommendedExposure);
         final chosenLabel = _getExposureLabel(_exposure);
@@ -1614,29 +1890,31 @@ class _AddPlantPageState extends State<AddPlantPage> {
           'icon': Icons.wb_sunny_outlined,
           'title': 'Exposition non optimale',
           'message': exposureSeverity == 'danger'
-              ? 'Cette plante a besoin de $recommendedLabel, mais vous avez choisi $chosenLabel. Cela pourrait nuire a sa sante.'
-              : 'Recommande: $recommendedLabel. Vous avez choisi $chosenLabel.',
+              ? 'Selon $source, cette plante a besoin de $recommendedLabel, mais vous avez choisi $chosenLabel. Cela pourrait nuire a sa sante.'
+              : 'Recommande par $source: $recommendedLabel. Vous avez choisi $chosenLabel.',
         });
       }
     }
 
     // Check watering interval mismatch
-    final recommendedInterval = plant.arrosageFrequenceJours;
-    final diff = (_wateringInterval - recommendedInterval).abs();
-    final percentDiff = diff / recommendedInterval;
+    final recommendedInterval = _recommendedWateringInterval;
+    if (recommendedInterval != null) {
+      final diff = (_wateringInterval - recommendedInterval).abs();
+      final percentDiff = diff / recommendedInterval;
 
-    if (percentDiff > 0.5) {
-      // More than 50% difference
-      final severity = percentDiff > 1.0 ? 'danger' : 'warning';
-      warnings.add({
-        'type': 'watering',
-        'severity': severity,
-        'icon': Icons.water_drop_outlined,
-        'title': 'Frequence d\'arrosage inhabituelle',
-        'message': severity == 'danger'
-            ? 'Recommande: tous les $recommendedInterval jours. Vous avez choisi $_wateringInterval jours. Cette difference importante pourrait stresser la plante.'
-            : 'Recommande: tous les $recommendedInterval jours. Vous avez choisi $_wateringInterval jours.',
-      });
+      if (percentDiff > 0.5) {
+        // More than 50% difference
+        final severity = percentDiff > 1.0 ? 'danger' : 'warning';
+        warnings.add({
+          'type': 'watering',
+          'severity': severity,
+          'icon': Icons.water_drop_outlined,
+          'title': 'Frequence d\'arrosage inhabituelle',
+          'message': severity == 'danger'
+              ? 'Recommande par $source: tous les $recommendedInterval jours. Vous avez choisi $_wateringInterval jours. Cette difference importante pourrait stresser la plante.'
+              : 'Recommande par $source: tous les $recommendedInterval jours. Vous avez choisi $_wateringInterval jours.',
+        });
+      }
     }
 
     return warnings;
@@ -1751,7 +2029,9 @@ class _AddPlantPageState extends State<AddPlantPage> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: isDanger ? Colors.red.shade700 : Colors.orange.shade700,
+                        color: isDanger
+                            ? Colors.red.shade700
+                            : Colors.orange.shade700,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -1774,7 +2054,8 @@ class _AddPlantPageState extends State<AddPlantPage> {
   }
 
   DateTime? _getLastWateredDate() {
-    if (_lastWateredOption == null || _lastWateredOption == 'unknown') return null;
+    if (_lastWateredOption == null || _lastWateredOption == 'unknown')
+      return null;
 
     final option = _lastWateredOptions.firstWhere(
       (o) => o['value'] == _lastWateredOption,
@@ -1808,10 +2089,7 @@ class _AddPlantPageState extends State<AddPlantPage> {
         const SizedBox(height: 6),
         Text(
           'Quand avez-vous arrose cette plante pour la derniere fois ?',
-          style: TextStyle(
-            fontSize: 12,
-            color: AppTheme.textGrey(context),
-          ),
+          style: TextStyle(fontSize: 12, color: AppTheme.textGrey(context)),
         ),
         const SizedBox(height: 12),
         Wrap(
@@ -1827,7 +2105,10 @@ class _AddPlantPageState extends State<AddPlantPage> {
               onTap: () => setState(() => _lastWateredOption = option['value']),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? color.withOpacity(0.15)
@@ -1837,13 +2118,15 @@ class _AddPlantPageState extends State<AddPlantPage> {
                     color: isSelected ? color : AppTheme.divider(context),
                     width: isSelected ? 2 : 1,
                   ),
-                  boxShadow: isSelected ? [
-                    BoxShadow(
-                      color: color.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ] : null,
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: color.withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1858,8 +2141,12 @@ class _AddPlantPageState extends State<AddPlantPage> {
                       option['label'] as String,
                       style: TextStyle(
                         fontSize: 13,
-                        color: isSelected ? color : AppTheme.textGreyDark(context),
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        color: isSelected
+                            ? color
+                            : AppTheme.textGreyDark(context),
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                       ),
                     ),
                   ],

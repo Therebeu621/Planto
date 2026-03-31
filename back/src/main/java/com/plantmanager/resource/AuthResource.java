@@ -457,7 +457,7 @@ public class AuthResource {
         }
 
         if (!BCrypt.checkpw(request.currentPassword(), user.passwordHash)) {
-            return Response.status(Response.Status.UNAUTHORIZED)
+            return Response.status(Response.Status.BAD_REQUEST)
                     .entity(new ErrorResponse("Mot de passe actuel incorrect"))
                     .build();
         }
@@ -747,9 +747,4 @@ public class AuthResource {
         return String.valueOf(code);
     }
 
-    public record ErrorResponse(String message) {
-    }
-
-    public record MessageResponse(String message) {
-    }
 }

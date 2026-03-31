@@ -38,8 +38,8 @@ public class QrCodeResource {
     public Response getPlantQrCode(
             @PathParam("plantId") UUID plantId,
             @QueryParam("size") @DefaultValue("300") int size) {
-        // Verify access
-        plantService.getPlantById(getCurrentUserId(), plantId);
+        // Verify read access
+        plantService.getPlantByIdReadOnly(getCurrentUserId(), plantId);
 
         try {
             byte[] qrImage = qrCodeService.generatePlantQrCode(plantId, Math.min(size, 1000));
@@ -49,7 +49,7 @@ public class QrCodeResource {
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .type(MediaType.APPLICATION_JSON)
-                    .entity(new PlantResource.ErrorResponse("Erreur generation QR: " + e.getMessage()))
+                    .entity(new com.plantmanager.dto.ErrorResponse("Erreur generation QR: " + e.getMessage()))
                     .build();
         }
     }

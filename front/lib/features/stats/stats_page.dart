@@ -139,7 +139,7 @@ class _StatsPageState extends State<StatsPage> with SingleTickerProviderStateMix
                             fontWeight: FontWeight.bold,
                             color: r['rank'] == 1 ? Colors.white : Colors.grey.shade700)),
                       ),
-                      title: Text(r['userName'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600)),
+                      title: Text(r['userName'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600)),
                       subtitle: Text('Niv. ${r['level']} - ${r['levelName'] ?? ''}'),
                       trailing: Text('${r['xp']} XP', style: const TextStyle(fontWeight: FontWeight.bold)),
                     ),
@@ -156,13 +156,17 @@ class _StatsPageState extends State<StatsPage> with SingleTickerProviderStateMix
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    for (final entry in (_dashboard['wateringsLast7Days'] as Map).entries)
-                      _buildBarChartItem(entry.key, entry.value ?? 0, 8),
-                  ],
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      for (final entry in (_dashboard['wateringsLast7Days'] as Map).entries) ...[
+                        _buildBarChartItem(entry.key, entry.value ?? 0, 8),
+                        const SizedBox(width: 12),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -181,7 +185,7 @@ class _StatsPageState extends State<StatsPage> with SingleTickerProviderStateMix
                       dense: true,
                       leading: _buildActivityIcon(a['type'] ?? ''),
                       title: Text('${a['userName'] ?? ''} ${a['description'] ?? ''} ${a['plantName'] ?? ''}',
-                          style: const TextStyle(fontSize: 13)),
+                          maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
                       trailing: Text(a['timeAgo'] ?? '', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
                     ),
                 ],
@@ -301,13 +305,17 @@ class _StatsPageState extends State<StatsPage> with SingleTickerProviderStateMix
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    for (final entry in (_annualStats['wateringsByMonth'] as Map).entries)
-                      _buildBarChartItem(entry.key.toString().substring(0, 1), entry.value ?? 0, 50),
-                  ],
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      for (final entry in (_annualStats['wateringsByMonth'] as Map).entries) ...[
+                        _buildBarChartItem(entry.key.toString().substring(0, 1), entry.value ?? 0, 50),
+                        const SizedBox(width: 12),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ),

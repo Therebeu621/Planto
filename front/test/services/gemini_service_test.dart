@@ -7,6 +7,10 @@ import 'package:http/testing.dart' as http_testing;
 import 'package:planto/core/services/gemini_service.dart';
 
 void main() {
+  GeminiService buildService(http.Client client) {
+    return GeminiService(client: client, apiKey: 'test-key');
+  }
+
   // Helper to build a Gemini-style JSON response body
   String buildGeminiResponse(String textContent) {
     return jsonEncode({
@@ -14,16 +18,17 @@ void main() {
         {
           'content': {
             'parts': [
-              {'text': textContent}
-            ]
-          }
-        }
-      ]
+              {'text': textContent},
+            ],
+          },
+        },
+      ],
     });
   }
 
   // Valid plant JSON that Gemini would return
-  const validPlantJson = '{'
+  const validPlantJson =
+      '{'
       '"petit_nom": "Mon Pilea",'
       '"espece": "Pilea peperomioides",'
       '"arrosage_jours": 7,'
@@ -55,7 +60,7 @@ void main() {
         return http.Response(buildGeminiResponse(validPlantJson), 200);
       });
 
-      final service = GeminiService(client: mockClient);
+      final service = buildService(mockClient);
       final result = await service.identifyPlant(fakeImageBytes);
 
       expect(result.petitNom, 'Mon Pilea');
@@ -71,7 +76,7 @@ void main() {
         return http.Response(buildGeminiResponse(wrappedJson), 200);
       });
 
-      final service = GeminiService(client: mockClient);
+      final service = buildService(mockClient);
       final result = await service.identifyPlant(fakeImageBytes);
 
       expect(result.petitNom, 'Mon Pilea');
@@ -84,7 +89,7 @@ void main() {
         return http.Response(buildGeminiResponse(wrappedJson), 200);
       });
 
-      final service = GeminiService(client: mockClient);
+      final service = buildService(mockClient);
       final result = await service.identifyPlant(fakeImageBytes);
 
       expect(result.petitNom, 'Mon Pilea');
@@ -92,15 +97,20 @@ void main() {
 
     test('non-200 status throws GeminiException', () async {
       final mockClient = http_testing.MockClient((request) async {
-        return http.Response('{"error": "bad request"}', 400);
+        return http.Response('{"error": {"message": "bad request"}}', 400);
       });
 
-      final service = GeminiService(client: mockClient);
+      final service = buildService(mockClient);
 
       expect(
         () => service.identifyPlant(fakeImageBytes),
-        throwsA(isA<GeminiException>().having(
-          (e) => e.message, 'message', contains('Erreur API Gemini: 400'))),
+        throwsA(
+          isA<GeminiException>().having(
+            (e) => e.message,
+            'message',
+            contains('bad request'),
+          ),
+        ),
       );
     });
 
@@ -109,12 +119,17 @@ void main() {
         return http.Response(jsonEncode({'candidates': []}), 200);
       });
 
-      final service = GeminiService(client: mockClient);
+      final service = buildService(mockClient);
 
       expect(
         () => service.identifyPlant(fakeImageBytes),
-        throwsA(isA<GeminiException>().having(
-          (e) => e.message, 'message', contains('Aucune reponse'))),
+        throwsA(
+          isA<GeminiException>().having(
+            (e) => e.message,
+            'message',
+            contains('Aucune reponse'),
+          ),
+        ),
       );
     });
 
@@ -123,12 +138,17 @@ void main() {
         return http.Response(jsonEncode({'candidates': null}), 200);
       });
 
-      final service = GeminiService(client: mockClient);
+      final service = buildService(mockClient);
 
       expect(
         () => service.identifyPlant(fakeImageBytes),
-        throwsA(isA<GeminiException>().having(
-          (e) => e.message, 'message', contains('Aucune reponse'))),
+        throwsA(
+          isA<GeminiException>().having(
+            (e) => e.message,
+            'message',
+            contains('Aucune reponse'),
+          ),
+        ),
       );
     });
 
@@ -136,20 +156,25 @@ void main() {
       final body = jsonEncode({
         'candidates': [
           {
-            'content': {'parts': []}
-          }
-        ]
+            'content': {'parts': []},
+          },
+        ],
       });
       final mockClient = http_testing.MockClient((request) async {
         return http.Response(body, 200);
       });
 
-      final service = GeminiService(client: mockClient);
+      final service = buildService(mockClient);
 
       expect(
         () => service.identifyPlant(fakeImageBytes),
-        throwsA(isA<GeminiException>().having(
-          (e) => e.message, 'message', contains('Reponse vide'))),
+        throwsA(
+          isA<GeminiException>().having(
+            (e) => e.message,
+            'message',
+            contains('Reponse vide'),
+          ),
+        ),
       );
     });
 
@@ -158,21 +183,28 @@ void main() {
         'candidates': [
           {
             'content': {
-              'parts': [{'text': null}]
-            }
-          }
-        ]
+              'parts': [
+                {'text': null},
+              ],
+            },
+          },
+        ],
       });
       final mockClient = http_testing.MockClient((request) async {
         return http.Response(body, 200);
       });
 
-      final service = GeminiService(client: mockClient);
+      final service = buildService(mockClient);
 
       expect(
         () => service.identifyPlant(fakeImageBytes),
-        throwsA(isA<GeminiException>().having(
-          (e) => e.message, 'message', contains('Texte de reponse vide'))),
+        throwsA(
+          isA<GeminiException>().having(
+            (e) => e.message,
+            'message',
+            contains('Texte de reponse vide'),
+          ),
+        ),
       );
     });
 
@@ -181,12 +213,17 @@ void main() {
         return http.Response(buildGeminiResponse(''), 200);
       });
 
-      final service = GeminiService(client: mockClient);
+      final service = buildService(mockClient);
 
       expect(
         () => service.identifyPlant(fakeImageBytes),
-        throwsA(isA<GeminiException>().having(
-          (e) => e.message, 'message', contains('Texte de reponse vide'))),
+        throwsA(
+          isA<GeminiException>().having(
+            (e) => e.message,
+            'message',
+            contains('Texte de reponse vide'),
+          ),
+        ),
       );
     });
 
@@ -195,12 +232,17 @@ void main() {
         return http.Response(buildGeminiResponse('not valid json {{{'), 200);
       });
 
-      final service = GeminiService(client: mockClient);
+      final service = buildService(mockClient);
 
       expect(
         () => service.identifyPlant(fakeImageBytes),
-        throwsA(isA<GeminiException>().having(
-          (e) => e.message, 'message', contains('Impossible de parser'))),
+        throwsA(
+          isA<GeminiException>().having(
+            (e) => e.message,
+            'message',
+            contains('Impossible de parser'),
+          ),
+        ),
       );
     });
 
@@ -209,12 +251,17 @@ void main() {
         throw Exception('Network unreachable');
       });
 
-      final service = GeminiService(client: mockClient);
+      final service = buildService(mockClient);
 
       expect(
         () => service.identifyPlant(fakeImageBytes),
-        throwsA(isA<GeminiException>().having(
-          (e) => e.message, 'message', contains('Erreur de connexion'))),
+        throwsA(
+          isA<GeminiException>().having(
+            (e) => e.message,
+            'message',
+            contains('Erreur de connexion'),
+          ),
+        ),
       );
     });
 
@@ -225,7 +272,7 @@ void main() {
         return http.Response(buildGeminiResponse(validPlantJson), 200);
       });
 
-      final service = GeminiService(client: mockClient);
+      final service = buildService(mockClient);
       await service.identifyPlant(fakeImageBytes);
 
       final contents = capturedBody['contents'] as List;
@@ -241,7 +288,7 @@ void main() {
         return http.Response(buildGeminiResponse(minimalJson), 200);
       });
 
-      final service = GeminiService(client: mockClient);
+      final service = buildService(mockClient);
       final result = await service.identifyPlant(fakeImageBytes);
 
       expect(result.petitNom, 'Test');

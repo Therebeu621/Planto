@@ -46,6 +46,10 @@ app.*.map.json
 .env
 .env.local
 
+# Firebase config (contains API keys)
+**/google-services.json
+**/GoogleService-Info.plist
+
 # SonarQube generated output
 .scannerwork/
 

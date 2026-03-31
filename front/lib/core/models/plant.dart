@@ -31,6 +31,9 @@ class Plant {
   // Recent care logs (from PlantDetailDTO)
   final List<CareLog> recentCareLogs;
 
+  // Whether the current user can manage (write) this plant
+  final bool canManage;
+
   Plant({
     required this.id,
     required this.nickname,
@@ -53,6 +56,7 @@ class Plant {
     this.species,
     this.room,
     this.recentCareLogs = const [],
+    this.canManage = true,
   });
 
   factory Plant.fromJson(Map<String, dynamic> json) {
@@ -121,6 +125,7 @@ class Plant {
       species: speciesInfo,
       room: roomInfo,
       recentCareLogs: careLogs,
+      canManage: json['canManage'] as bool? ?? true,
     );
   }
 

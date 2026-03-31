@@ -5,6 +5,7 @@ import com.google.zxing.EncodeHintType;
 import com.google.zxing.WriterException;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import com.google.zxing.qrcode.QRCodeWriter;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -17,18 +18,19 @@ import java.util.UUID;
 @ApplicationScoped
 public class QrCodeService {
 
-    @ConfigProperty(name = "app.frontend.base-url", defaultValue = "https://planto.app")
-    String frontendBaseUrl;
+    @ConfigProperty(name = "app.backend.base-url", defaultValue = "http://localhost:8080")
+    String backendBaseUrl;
 
     public byte[] generatePlantQrCode(UUID plantId, int size) throws WriterException, IOException {
-        String url = frontendBaseUrl + "/plant/" + plantId;
+        String url = backendBaseUrl + "/api/v1/public/plant/" + plantId;
         return generateQrCode(url, size);
     }
 
     public byte[] generateQrCode(String content, int size) throws WriterException, IOException {
         QRCodeWriter writer = new QRCodeWriter();
         Map<EncodeHintType, Object> hints = Map.of(
-                EncodeHintType.MARGIN, 1,
+                EncodeHintType.MARGIN, 4,
+                EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M,
                 EncodeHintType.CHARACTER_SET, "UTF-8"
         );
 

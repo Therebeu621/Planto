@@ -7,5 +7,5 @@ import jakarta.validation.constraints.Size;
  * DTO for creating a new house.
  */
 public record CreateHouseDTO(
-        @NotBlank(message = "House name is required") @Size(max = 100, message = "House name must be at most 100 characters") String name) {
+        @NotBlank(message = "Le nom de la maison est requis") @Size(max = 100, message = "Le nom de la maison doit contenir au maximum 100 caracteres") String name) {
 }

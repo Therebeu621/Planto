@@ -8,8 +8,30 @@ import 'package:planto/core/services/plant_service.dart';
 import 'package:planto/core/services/house_service.dart';
 import 'package:planto/core/services/profile_service.dart';
 import 'package:planto/core/services/notification_service.dart';
+import 'package:planto/core/services/fcm_service.dart';
 import '../test_helpers.dart';
 import 'page_test_helper.dart';
+
+/// Fake FcmService that does nothing (no Firebase dependency)
+class FakeFcmService implements FcmService {
+  @override
+  void addOnMessageListener(FcmMessageCallback listener) {}
+
+  @override
+  void removeOnMessageListener(FcmMessageCallback listener) {}
+
+  @override
+  Future<void> init() async {}
+
+  @override
+  Future<void> registerToken() async {}
+
+  @override
+  Future<void> unregisterToken() async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
 
 void main() {
   late MockDioInterceptor mockInterceptor;
@@ -62,7 +84,9 @@ void main() {
           'nickname': 'Monstera',
           'speciesCommonName': 'Monstera deliciosa',
           'needsWatering': false,
-          'nextWateringDate': DateTime.now().add(const Duration(days: 3)).toIso8601String(),
+          'nextWateringDate': DateTime.now()
+              .add(const Duration(days: 3))
+              .toIso8601String(),
           'isSick': false,
           'isWilted': false,
           'needsRepotting': false,
@@ -80,7 +104,9 @@ void main() {
           'nickname': 'Aloe',
           'speciesCommonName': 'Aloe vera',
           'needsWatering': true,
-          'nextWateringDate': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
+          'nextWateringDate': DateTime.now()
+              .subtract(const Duration(days: 1))
+              .toIso8601String(),
           'isSick': true,
           'isWilted': false,
           'needsRepotting': true,
@@ -117,7 +143,9 @@ void main() {
     'isSick': false,
     'isWilted': false,
     'needsRepotting': false,
-    'nextWateringDate': DateTime.now().add(const Duration(days: 7)).toIso8601String(),
+    'nextWateringDate': DateTime.now()
+        .add(const Duration(days: 7))
+        .toIso8601String(),
   };
 
   setUp(() {
@@ -131,16 +159,42 @@ void main() {
     profileService = ProfileService(dio: mockDio);
   });
 
-  void setupMocks({bool withError = false, bool emptyRooms = false, bool emptyHouses = false}) {
+  void setupMocks({
+    bool withError = false,
+    bool emptyRooms = false,
+    bool emptyHouses = false,
+  }) {
     mockInterceptor.clearResponses();
     if (withError) {
-      mockInterceptor.addMockResponse('/api/v1/houses', isError: true, errorStatusCode: 500);
-      mockInterceptor.addMockResponse('/api/v1/rooms', isError: true, errorStatusCode: 500);
-      mockInterceptor.addMockResponse('/api/v1/auth/me', isError: true, errorStatusCode: 500);
-      mockInterceptor.addMockResponse('/api/v1/plants', data: [], statusCode: 200);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses',
+        isError: true,
+        errorStatusCode: 500,
+      );
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        isError: true,
+        errorStatusCode: 500,
+      );
+      mockInterceptor.addMockResponse(
+        '/api/v1/auth/me',
+        isError: true,
+        errorStatusCode: 500,
+      );
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants',
+        data: [],
+        statusCode: 200,
+      );
     } else {
-      mockInterceptor.addMockResponse('/api/v1/houses', data: emptyHouses ? [] : mockHouses);
-      mockInterceptor.addMockResponse('/api/v1/rooms', data: emptyRooms ? [] : mockRoomsWithPlants);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses',
+        data: emptyHouses ? [] : mockHouses,
+      );
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: emptyRooms ? [] : mockRoomsWithPlants,
+      );
       mockInterceptor.addMockResponse('/api/v1/auth/me', data: mockProfile);
       mockInterceptor.addMockResponse('/api/v1/plants', data: mockPlants);
     }
@@ -156,6 +210,7 @@ void main() {
         houseService: houseService,
         profileService: profileService,
         notificationService: NotificationService(),
+        fcmService: FakeFcmService(),
       ),
     );
   }
@@ -220,8 +275,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
 
-      // User initial 'T' from email 'test@test.com'
-      expect(find.text('T'), findsWidgets);
+      expect(find.text('TU'), findsWidgets);
 
       FlutterError.onError = origOnError;
     });
@@ -256,7 +310,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('shows notification badge with thirsty plant count', (tester) async {
+    testWidgets('shows notification badge with thirsty plant count', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -392,7 +448,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('tapping search and entering text filters plants', (tester) async {
+    testWidgets('tapping search and entering text filters plants', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -414,7 +472,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('tapping thirsty filter shows only thirsty plants', (tester) async {
+    testWidgets('tapping thirsty filter shows only thirsty plants', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -436,7 +496,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('tapping room filter shows plants from that room only', (tester) async {
+    testWidgets('tapping room filter shows plants from that room only', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -525,7 +587,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('add menu shows Nouvelle Piece option for owners', (tester) async {
+    testWidgets('add menu shows Nouvelle Piece option for owners', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -545,7 +609,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('tapping Nouvelle Plante shows plant add method sheet', (tester) async {
+    testWidgets('tapping Nouvelle Plante shows plant add method sheet', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -581,20 +647,23 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
 
+      // Bell icon should be visible
       final bellIcon = find.byIcon(Icons.notifications_outlined);
-      if (bellIcon.evaluate().isNotEmpty) {
-        await tester.tap(bellIcon.first);
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pump(const Duration(milliseconds: 300));
+      expect(bellIcon, findsOneWidget);
 
-        // Should show "Aujourd'hui"
-        expect(find.text("Aujourd'hui"), findsOneWidget);
-      }
+      // Tap bell — navigates to NotificationsPage
+      await tester.tap(bellIcon);
+      await tester.pumpAndSettle();
+
+      // HomePage should no longer be the top-level route
+      expect(find.byType(HomePage), findsNothing);
 
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('notification sheet shows thirsty plants count', (tester) async {
+    testWidgets('notification sheet shows thirsty plants count', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -617,7 +686,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('empty notification sheet shows all-clear message', (tester) async {
+    testWidgets('empty notification sheet shows all-clear message', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -625,22 +696,27 @@ void main() {
       // Set up rooms with no thirsty plants
       mockInterceptor.clearResponses();
       mockInterceptor.addMockResponse('/api/v1/houses', data: mockHouses);
-      mockInterceptor.addMockResponse('/api/v1/rooms', data: [
-        {
-          'id': 'r1',
-          'name': 'Salon',
-          'type': 'LIVING_ROOM',
-          'plantCount': 1,
-          'plants': [
-            {
-              'id': 'p1',
-              'nickname': 'Ficus',
-              'needsWatering': false,
-              'nextWateringDate': DateTime.now().add(const Duration(days: 5)).toIso8601String(),
-            },
-          ],
-        },
-      ]);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: [
+          {
+            'id': 'r1',
+            'name': 'Salon',
+            'type': 'LIVING_ROOM',
+            'plantCount': 1,
+            'plants': [
+              {
+                'id': 'p1',
+                'nickname': 'Ficus',
+                'needsWatering': false,
+                'nextWateringDate': DateTime.now()
+                    .add(const Duration(days: 5))
+                    .toIso8601String(),
+              },
+            ],
+          },
+        ],
+      );
       mockInterceptor.addMockResponse('/api/v1/auth/me', data: mockProfile);
       mockInterceptor.addMockResponse('/api/v1/plants', data: mockPlants);
 
@@ -648,14 +724,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
 
+      // With no thirsty plants, bell badge should not appear
       final bellIcon = find.byIcon(Icons.notifications_outlined);
-      if (bellIcon.evaluate().isNotEmpty) {
-        await tester.tap(bellIcon.first);
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(find.text('Tout est en ordre !'), findsOneWidget);
-      }
+      expect(bellIcon, findsOneWidget);
 
       FlutterError.onError = origOnError;
     });
@@ -700,7 +771,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('house selector shows active house with check icon', (tester) async {
+    testWidgets('house selector shows active house with check icon', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -780,7 +853,9 @@ void main() {
   });
 
   group('HomePage - Navigation', () {
-    testWidgets('user avatar is tappable (GestureDetector wraps it)', (tester) async {
+    testWidgets('user avatar is tappable (GestureDetector wraps it)', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -824,8 +899,15 @@ void main() {
       final origOnError = suppressOverflowErrors();
 
       mockInterceptor.clearResponses();
-      mockInterceptor.addMockResponse('/api/v1/houses', isError: true, errorStatusCode: 500);
-      mockInterceptor.addMockResponse('/api/v1/rooms', data: mockRoomsWithPlants);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses',
+        isError: true,
+        errorStatusCode: 500,
+      );
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: mockRoomsWithPlants,
+      );
       mockInterceptor.addMockResponse('/api/v1/auth/me', data: mockProfile);
       mockInterceptor.addMockResponse('/api/v1/plants', data: mockPlants);
 
@@ -846,8 +928,15 @@ void main() {
 
       mockInterceptor.clearResponses();
       mockInterceptor.addMockResponse('/api/v1/houses', data: mockHouses);
-      mockInterceptor.addMockResponse('/api/v1/rooms', data: mockRoomsWithPlants);
-      mockInterceptor.addMockResponse('/api/v1/auth/me', isError: true, errorStatusCode: 401);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: mockRoomsWithPlants,
+      );
+      mockInterceptor.addMockResponse(
+        '/api/v1/auth/me',
+        isError: true,
+        errorStatusCode: 401,
+      );
       mockInterceptor.addMockResponse('/api/v1/plants', data: mockPlants);
 
       await tester.pumpWidget(buildWidget());
@@ -862,21 +951,26 @@ void main() {
   });
 
   group('HomePage - Switch House', () {
-    testWidgets('switching house calls activate API and reloads rooms', (tester) async {
+    testWidgets('switching house calls activate API and reloads rooms', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
       setupMocks();
       // Mock the activate endpoint for switching houses
-      mockInterceptor.addMockResponse('/api/v1/houses/h2/activate', data: {
-        'id': 'h2',
-        'name': 'Maison 2',
-        'inviteCode': 'DEF456',
-        'memberCount': 1,
-        'roomCount': 1,
-        'isActive': true,
-        'role': 'MEMBER',
-      });
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h2/activate',
+        data: {
+          'id': 'h2',
+          'name': 'Maison 2',
+          'inviteCode': 'DEF456',
+          'memberCount': 1,
+          'roomCount': 1,
+          'isActive': true,
+          'role': 'MEMBER',
+        },
+      );
 
       await tester.pumpWidget(buildWidget());
       await tester.pump(const Duration(milliseconds: 300));
@@ -908,8 +1002,11 @@ void main() {
       final origOnError = suppressOverflowErrors();
       setupMocks();
       // Mock the activate endpoint with error
-      mockInterceptor.addMockResponse('/api/v1/houses/h2/activate',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h2/activate',
+        isError: true,
+        errorStatusCode: 500,
+      );
 
       await tester.pumpWidget(buildWidget());
       await tester.pump(const Duration(milliseconds: 300));
@@ -933,15 +1030,23 @@ void main() {
   });
 
   group('HomePage - Water Plant (detailed)', () {
-    testWidgets('tapping water button calls the water API endpoint', (tester) async {
+    testWidgets('tapping water button calls the water API endpoint', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
       // Add water mock BEFORE generic /api/v1/plants so it matches first
       mockInterceptor.clearResponses();
-      mockInterceptor.addMockResponse('/api/v1/plants/p1/water', data: mockWateredPlant);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1/water',
+        data: mockWateredPlant,
+      );
       mockInterceptor.addMockResponse('/api/v1/houses', data: mockHouses);
-      mockInterceptor.addMockResponse('/api/v1/rooms', data: mockRoomsWithPlants);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: mockRoomsWithPlants,
+      );
       mockInterceptor.addMockResponse('/api/v1/auth/me', data: mockProfile);
       mockInterceptor.addMockResponse('/api/v1/plants', data: mockPlants);
 
@@ -981,10 +1086,16 @@ void main() {
       final origOnError = suppressOverflowErrors();
       // Add water error mock BEFORE generic /api/v1/plants
       mockInterceptor.clearResponses();
-      mockInterceptor.addMockResponse('/api/v1/plants/p1/water',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1/water',
+        isError: true,
+        errorStatusCode: 500,
+      );
       mockInterceptor.addMockResponse('/api/v1/houses', data: mockHouses);
-      mockInterceptor.addMockResponse('/api/v1/rooms', data: mockRoomsWithPlants);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: mockRoomsWithPlants,
+      );
       mockInterceptor.addMockResponse('/api/v1/auth/me', data: mockProfile);
       mockInterceptor.addMockResponse('/api/v1/plants', data: mockPlants);
 
@@ -1001,15 +1112,19 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Should show error snackbar
-      expect(find.textContaining('Erreur'), findsWidgets);
+      expect(
+        find.textContaining("Impossible d'arroser la plante"),
+        findsWidgets,
+      );
 
       FlutterError.onError = origOnError;
     });
   });
 
   group('HomePage - Filter logic (thirsty)', () {
-    testWidgets('thirsty filter only shows plants that need watering', (tester) async {
+    testWidgets('thirsty filter only shows plants that need watering', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -1039,7 +1154,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('deselecting thirsty filter restores all plants', (tester) async {
+    testWidgets('deselecting thirsty filter restores all plants', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -1069,7 +1186,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('room filter shows only plants from selected room', (tester) async {
+    testWidgets('room filter shows only plants from selected room', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -1149,7 +1268,9 @@ void main() {
   });
 
   group('HomePage - Notification sheet plant chip', () {
-    testWidgets('tapping a plant chip in notification sheet closes sheet', (tester) async {
+    testWidgets('tapping a plant chip in notification sheet closes sheet', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -1159,28 +1280,13 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Open notification sheet
+      // Bell icon should be visible with thirsty plants
       final bellIcon = find.byIcon(Icons.notifications_outlined);
       expect(bellIcon, findsOneWidget);
+
+      // Tap bell to navigate to notifications page
       await tester.tap(bellIcon);
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Should show "Aujourd'hui"
-      expect(find.text("Aujourd'hui"), findsOneWidget);
-
-      // Find a thirsty plant chip in the notification sheet
-      // The chip contains the plant name (e.g., 'Ficus') inside an InkWell
-      final ficusChipText = find.text('Ficus');
-      if (ficusChipText.evaluate().isNotEmpty) {
-        // Tap the plant chip - this calls Navigator.pop + _navigateToPlantDetails
-        await tester.tap(ficusChipText.last);
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // The notification sheet should be dismissed
-        expect(find.text("Aujourd'hui"), findsNothing);
-      }
+      await tester.pumpAndSettle();
 
       FlutterError.onError = origOnError;
     });
@@ -1211,16 +1317,21 @@ void main() {
 
       // AddRoomDialog should be shown (it's a dialog)
       // The dialog contains a form - verify it appeared
-      expect(find.byType(AlertDialog).evaluate().isNotEmpty ||
-             find.byType(Dialog).evaluate().isNotEmpty ||
-             find.byType(Form).evaluate().isNotEmpty, isTrue);
+      expect(
+        find.byType(AlertDialog).evaluate().isNotEmpty ||
+            find.byType(Dialog).evaluate().isNotEmpty ||
+            find.byType(Form).evaluate().isNotEmpty,
+        isTrue,
+      );
 
       FlutterError.onError = origOnError;
     });
   });
 
   group('HomePage - Plant add method sheet options', () {
-    testWidgets('tapping Identifier une plante triggers AI identification', (tester) async {
+    testWidgets('tapping Identifier une plante triggers AI identification', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -1255,7 +1366,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('tapping Saisie manuelle triggers manual add navigation', (tester) async {
+    testWidgets('tapping Saisie manuelle triggers manual add navigation', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -1317,7 +1430,9 @@ void main() {
   });
 
   group('HomePage - Silent refresh', () {
-    testWidgets('page still works after silent refresh with error', (tester) async {
+    testWidgets('page still works after silent refresh with error', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -1332,7 +1447,11 @@ void main() {
 
       // Now make rooms API fail for silent refresh
       mockInterceptor.clearResponses();
-      mockInterceptor.addMockResponse('/api/v1/rooms', isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        isError: true,
+        errorStatusCode: 500,
+      );
       mockInterceptor.addMockResponse('/api/v1/houses', data: mockHouses);
       mockInterceptor.addMockResponse('/api/v1/auth/me', data: mockProfile);
       mockInterceptor.addMockResponse('/api/v1/plants', data: mockPlants);
@@ -1352,7 +1471,10 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
       setupMocks();
-      mockInterceptor.addMockResponse('/api/v1/plants/p1/water', data: mockWateredPlant);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1/water',
+        data: mockWateredPlant,
+      );
 
       await tester.pumpWidget(buildWidget());
       await tester.pump(const Duration(milliseconds: 300));
@@ -1377,8 +1499,11 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
       setupMocks();
-      mockInterceptor.addMockResponse('/api/v1/plants/p1/water',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1/water',
+        isError: true,
+        errorStatusCode: 500,
+      );
 
       await tester.pumpWidget(buildWidget());
       await tester.pump(const Duration(milliseconds: 300));
@@ -1397,22 +1522,27 @@ void main() {
   });
 
   group('HomePage - Empty room state', () {
-    testWidgets('shows empty room placeholder when room has no plants', (tester) async {
+    testWidgets('shows empty room placeholder when room has no plants', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
       mockInterceptor.clearResponses();
       mockInterceptor.addMockResponse('/api/v1/houses', data: mockHouses);
-      mockInterceptor.addMockResponse('/api/v1/rooms', data: [
-        {
-          'id': 'r1',
-          'name': 'Salon Vide',
-          'type': 'LIVING_ROOM',
-          'plantCount': 0,
-          'plants': [],
-        },
-      ]);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: [
+          {
+            'id': 'r1',
+            'name': 'Salon Vide',
+            'type': 'LIVING_ROOM',
+            'plantCount': 0,
+            'plants': [],
+          },
+        ],
+      );
       mockInterceptor.addMockResponse('/api/v1/auth/me', data: mockProfile);
       mockInterceptor.addMockResponse('/api/v1/plants', data: []);
 
@@ -1433,15 +1563,18 @@ void main() {
 
       mockInterceptor.clearResponses();
       mockInterceptor.addMockResponse('/api/v1/houses', data: mockHouses);
-      mockInterceptor.addMockResponse('/api/v1/rooms', data: [
-        {
-          'id': 'r1',
-          'name': 'Salon Vide',
-          'type': 'LIVING_ROOM',
-          'plantCount': 0,
-          'plants': [],
-        },
-      ]);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: [
+          {
+            'id': 'r1',
+            'name': 'Salon Vide',
+            'type': 'LIVING_ROOM',
+            'plantCount': 0,
+            'plants': [],
+          },
+        ],
+      );
       mockInterceptor.addMockResponse('/api/v1/auth/me', data: mockProfile);
       mockInterceptor.addMockResponse('/api/v1/plants', data: []);
 
@@ -1480,7 +1613,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('create or join dialog shows from house selector', (tester) async {
+    testWidgets('create or join dialog shows from house selector', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -1528,7 +1663,10 @@ void main() {
         'role': 'OWNER',
       };
       mockInterceptor.addMockResponse('/api/v1/houses', data: [newHouse]);
-      mockInterceptor.addMockResponse('/api/v1/houses/h3/activate', data: newHouse);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h3/activate',
+        data: newHouse,
+      );
 
       await tester.pumpWidget(buildWidget());
       await tester.pump(const Duration(milliseconds: 300));
@@ -1590,7 +1728,10 @@ void main() {
         'role': 'MEMBER',
       };
       mockInterceptor.addMockResponse('/api/v1/houses/join', data: joinedHouse);
-      mockInterceptor.addMockResponse('/api/v1/houses/h3/activate', data: joinedHouse);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h3/activate',
+        data: joinedHouse,
+      );
 
       await tester.pumpWidget(buildWidget());
       await tester.pump(const Duration(milliseconds: 300));

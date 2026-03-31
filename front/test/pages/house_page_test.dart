@@ -61,7 +61,9 @@ void main() {
       'isSick': false,
       'isWilted': false,
       'needsRepotting': false,
-      'nextWateringDate': DateTime.now().add(const Duration(days: 1)).toIso8601String(),
+      'nextWateringDate': DateTime.now()
+          .add(const Duration(days: 1))
+          .toIso8601String(),
     },
   ];
 
@@ -81,7 +83,11 @@ void main() {
   }) {
     mockInterceptor.clearResponses();
     if (withError) {
-      mockInterceptor.addMockResponse('/api/v1/houses', isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses',
+        isError: true,
+        errorStatusCode: 500,
+      );
     } else {
       mockInterceptor.addMockResponse(
         '/api/v1/houses',
@@ -343,7 +349,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('notification switch is rendered with correct initial value', (tester) async {
+    testWidgets('notification switch is rendered with correct initial value', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -564,7 +572,9 @@ void main() {
   group('HousePage - Create House Dialog', () {
     // Note: Create/Join buttons would need to be found. In HousePage they appear
     // in the management section or when there's no house.
-    testWidgets('create house dialog can be triggered from no-house state', (tester) async {
+    testWidgets('create house dialog can be triggered from no-house state', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -736,7 +746,9 @@ void main() {
   });
 
   group('HousePage - Delete House Confirm', () {
-    testWidgets('confirming delete calls API and pops navigator on success', (tester) async {
+    testWidgets('confirming delete calls API and pops navigator on success', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -793,7 +805,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('confirming delete shows error snackbar on API failure', (tester) async {
+    testWidgets('confirming delete shows error snackbar on API failure', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -825,14 +839,19 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Error snackbar should appear
-      expect(find.textContaining('Erreur'), findsOneWidget);
+      expect(
+        find.textContaining('Seul le proprietaire peut supprimer la maison'),
+        findsOneWidget,
+      );
 
       FlutterError.onError = origOnError;
     });
   });
 
   group('HousePage - Leave House Confirm with Error', () {
-    testWidgets('confirming leave shows error snackbar on API failure', (tester) async {
+    testWidgets('confirming leave shows error snackbar on API failure', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -843,7 +862,10 @@ void main() {
         isError: true,
         errorStatusCode: 400,
       );
-      mockInterceptor.addMockResponse('/api/v1/houses', data: mockHousesWithMember);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses',
+        data: mockHousesWithMember,
+      );
       mockInterceptor.addMockResponse('/api/v1/plants', data: mockPlants);
 
       await tester.pumpWidget(buildWidget());
@@ -864,12 +886,17 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Error snackbar should appear
-      expect(find.textContaining('Erreur'), findsOneWidget);
+      expect(
+        find.textContaining('Impossible de quitter cette maison'),
+        findsOneWidget,
+      );
 
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('confirming leave calls API and reloads data on success', (tester) async {
+    testWidgets('confirming leave calls API and reloads data on success', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -966,7 +993,9 @@ void main() {
   });
 
   group('HousePage - Management Actions', () {
-    testWidgets('tapping manage rooms navigates to RoomListPage', (tester) async {
+    testWidgets('tapping manage rooms navigates to RoomListPage', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -989,7 +1018,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('tapping manage members navigates to HouseMembersPage', (tester) async {
+    testWidgets('tapping manage members navigates to HouseMembersPage', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -1014,7 +1045,9 @@ void main() {
   });
 
   group('HousePage - Notification Toggle', () {
-    testWidgets('notification toggle shows correct initial state', (tester) async {
+    testWidgets('notification toggle shows correct initial state', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -1039,7 +1072,9 @@ void main() {
   });
 
   group('HousePage - Multiple Houses', () {
-    testWidgets('loads with multiple houses and shows active one', (tester) async {
+    testWidgets('loads with multiple houses and shows active one', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -1063,7 +1098,9 @@ void main() {
       final origOnError = suppressOverflowErrors();
 
       // Set up email in SharedPreferences
-      SharedPreferences.setMockInitialValues({'user_email': 'test@example.com'});
+      SharedPreferences.setMockInitialValues({
+        'user_email': 'test@example.com',
+      });
 
       setupMocks();
 
@@ -1115,12 +1152,18 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
           break;
         }
-        await tester.drag(find.byType(CustomScrollView).first, const Offset(0, -400));
+        await tester.drag(
+          find.byType(CustomScrollView).first,
+          const Offset(0, -400),
+        );
         await tester.pump(const Duration(milliseconds: 100));
       }
 
       // Confirm deletion if dialog appeared
-      final confirmBtn = find.widgetWithText(ElevatedButton, 'Supprimer definitivement');
+      final confirmBtn = find.widgetWithText(
+        ElevatedButton,
+        'Supprimer definitivement',
+      );
       if (confirmBtn.evaluate().isNotEmpty) {
         await tester.tap(confirmBtn.first);
         await tester.pump(const Duration(milliseconds: 300));
@@ -1148,7 +1191,10 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
           break;
         }
-        await tester.drag(find.byType(CustomScrollView).first, const Offset(0, -400));
+        await tester.drag(
+          find.byType(CustomScrollView).first,
+          const Offset(0, -400),
+        );
         await tester.pump(const Duration(milliseconds: 100));
       }
 
@@ -1169,8 +1215,11 @@ void main() {
       final origOnError = suppressOverflowErrors();
       // Set up error mock first so it takes priority over the generic /api/v1/houses mock
       mockInterceptor.clearResponses();
-      mockInterceptor.addMockResponse('/api/v1/houses/h1',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1',
+        isError: true,
+        errorStatusCode: 500,
+      );
       mockInterceptor.addMockResponse('/api/v1/houses', data: mockHouses);
       mockInterceptor.addMockResponse('/api/v1/plants', data: mockPlants);
 
@@ -1185,11 +1234,17 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
           break;
         }
-        await tester.drag(find.byType(CustomScrollView).first, const Offset(0, -400));
+        await tester.drag(
+          find.byType(CustomScrollView).first,
+          const Offset(0, -400),
+        );
         await tester.pump(const Duration(milliseconds: 100));
       }
 
-      final confirmBtn = find.widgetWithText(ElevatedButton, 'Supprimer definitivement');
+      final confirmBtn = find.widgetWithText(
+        ElevatedButton,
+        'Supprimer definitivement',
+      );
       if (confirmBtn.evaluate().isNotEmpty) {
         await tester.tap(confirmBtn.first);
         await tester.pumpAndSettle();
@@ -1201,7 +1256,9 @@ void main() {
   });
 
   group('HousePage - Logout flow', () {
-    testWidgets('logout confirmed calls authService and navigates', (tester) async {
+    testWidgets('logout confirmed calls authService and navigates', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -1219,7 +1276,10 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
           break;
         }
-        await tester.drag(find.byType(CustomScrollView).first, const Offset(0, -400));
+        await tester.drag(
+          find.byType(CustomScrollView).first,
+          const Offset(0, -400),
+        );
         await tester.pump(const Duration(milliseconds: 100));
       }
 
@@ -1252,7 +1312,10 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
           break;
         }
-        await tester.drag(find.byType(CustomScrollView).first, const Offset(0, -400));
+        await tester.drag(
+          find.byType(CustomScrollView).first,
+          const Offset(0, -400),
+        );
         await tester.pump(const Duration(milliseconds: 100));
       }
 

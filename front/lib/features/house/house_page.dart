@@ -6,8 +6,10 @@ import 'package:planto/core/services/house_service.dart';
 import 'package:planto/core/services/notification_service.dart';
 import 'package:planto/core/services/plant_service.dart';
 import 'package:planto/core/theme/app_theme.dart';
+import 'package:planto/core/utils/api_error_formatter.dart';
 import 'package:planto/features/auth/login_page.dart';
 import 'package:planto/features/house/house_members_page.dart';
+import 'package:planto/features/house/vacation_page.dart';
 import 'package:planto/features/room/room_list_page.dart';
 
 class HousePage extends StatefulWidget {
@@ -31,7 +33,8 @@ class HousePage extends StatefulWidget {
 class _HousePageState extends State<HousePage> {
   late final HouseService _houseService = widget.houseService ?? HouseService();
   late final AuthService _authService = widget.authService ?? AuthService();
-  late final NotificationService _notificationService = widget.notificationService ?? NotificationService();
+  late final NotificationService _notificationService =
+      widget.notificationService ?? NotificationService();
   late final PlantService _plantService = widget.plantService ?? PlantService();
 
   House? _activeHouse;
@@ -39,6 +42,15 @@ class _HousePageState extends State<HousePage> {
   String? _userEmail;
   bool _isLoading = true;
   bool _notificationsEnabled = true; // Per-house notification preference
+
+  void _showErrorSnackbar(Object error) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(formatApiError(error)),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -53,15 +65,24 @@ class _HousePageState extends State<HousePage> {
       final houses = await _houseService.getMyHouses();
       final activeHouse = houses.firstWhere(
         (h) => h.isActive,
-        orElse: () => houses.isNotEmpty ? houses.first : House(
-          id: '', name: '', inviteCode: '', memberCount: 0, roomCount: 0, isActive: false,
-        ),
+        orElse: () => houses.isNotEmpty
+            ? houses.first
+            : House(
+                id: '',
+                name: '',
+                inviteCode: '',
+                memberCount: 0,
+                roomCount: 0,
+                isActive: false,
+              ),
       );
 
       // Load notification preference for active house
       bool notifEnabled = true;
       if (activeHouse.id.isNotEmpty) {
-        notifEnabled = await _notificationService.isHouseNotificationEnabled(activeHouse.id);
+        notifEnabled = await _notificationService.isHouseNotificationEnabled(
+          activeHouse.id,
+        );
       }
 
       if (mounted) {
@@ -89,12 +110,14 @@ class _HousePageState extends State<HousePage> {
             children: const [
               Icon(Icons.check_circle, color: Colors.white, size: 20),
               SizedBox(width: 8),
-              Text('Code copie dans le presse-papier !'),
+              Flexible(child: Text('Code copie dans le presse-papier !')),
             ],
           ),
           backgroundColor: AppTheme.successColor,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     }
@@ -117,7 +140,7 @@ class _HousePageState extends State<HousePage> {
               child: const Icon(Icons.home_work, color: AppTheme.primaryColor),
             ),
             const SizedBox(width: 12),
-            const Text('Rejoindre une maison'),
+            const Flexible(child: Text('Rejoindre une maison')),
           ],
         ),
         content: TextField(
@@ -137,13 +160,18 @@ class _HousePageState extends State<HousePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Annuler', style: TextStyle(color: AppTheme.textGrey(context))),
+            child: Text(
+              'Annuler',
+              style: TextStyle(color: AppTheme.textGrey(context)),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, controller.text),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: const Text('Rejoindre'),
           ),
@@ -152,30 +180,31 @@ class _HousePageState extends State<HousePage> {
     );
 
     if (result != null && result.isNotEmpty) {
+      final inviteCode = result.trim().toUpperCase();
+      if (inviteCode.length != 8) {
+        _showErrorSnackbar('Le code d\'invitation doit contenir 8 caracteres');
+        return;
+      }
+
       setState(() => _isLoading = true);
       try {
-        // Join the house and get the returned house object
-        final joinedHouse = await _houseService.joinHouse(result.trim().toUpperCase());
+        // Send a join request (creates a pending invitation)
+        final invitation = await _houseService.requestJoinHouse(inviteCode);
 
-        // Switch to the newly joined house
-        await _houseService.switchActiveHouse(joinedHouse.id);
-
-        // Reload data to show the new house
+        // Reload data
         await _loadData();
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Bienvenue dans "${joinedHouse.name}" !'),
+              content: Text('Demande envoyée pour "${invitation.houseName}" !'),
               backgroundColor: AppTheme.successColor,
             ),
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
-          );
+          _showErrorSnackbar(e);
           setState(() => _isLoading = false);
         }
       }
@@ -197,7 +226,11 @@ class _HousePageState extends State<HousePage> {
                 color: Colors.red.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
+              child: const Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.red,
+                size: 28,
+              ),
             ),
             const SizedBox(width: 12),
             const Expanded(
@@ -231,11 +264,13 @@ class _HousePageState extends State<HousePage> {
                     children: const [
                       Icon(Icons.warning, color: Colors.red, size: 18),
                       SizedBox(width: 8),
-                      Text(
-                        'Cette action est irreversible',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red,
+                      Flexible(
+                        child: Text(
+                          'Cette action est irreversible',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red,
+                          ),
                         ),
                       ),
                     ],
@@ -243,7 +278,10 @@ class _HousePageState extends State<HousePage> {
                   const SizedBox(height: 8),
                   Text(
                     'Toutes les donnees seront supprimees :',
-                    style: TextStyle(fontSize: 13, color: AppTheme.textGreyDark(context)),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.textGreyDark(context),
+                    ),
                   ),
                   const SizedBox(height: 4),
                   _buildWarningItem('Toutes les plantes'),
@@ -257,13 +295,18 @@ class _HousePageState extends State<HousePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Annuler', style: TextStyle(color: AppTheme.textGrey(context))),
+            child: Text(
+              'Annuler',
+              style: TextStyle(color: AppTheme.textGrey(context)),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: const Text('Supprimer definitivement'),
           ),
@@ -287,9 +330,7 @@ class _HousePageState extends State<HousePage> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
-          );
+          _showErrorSnackbar(e);
           setState(() => _isLoading = false);
         }
       }
@@ -303,7 +344,15 @@ class _HousePageState extends State<HousePage> {
         children: [
           Icon(Icons.circle, size: 6, color: AppTheme.textGrey(context)),
           const SizedBox(width: 8),
-          Text(text, style: TextStyle(fontSize: 12, color: AppTheme.textGreyDark(context))),
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.textGreyDark(context),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -326,7 +375,7 @@ class _HousePageState extends State<HousePage> {
               child: const Icon(Icons.add_home, color: Colors.blue),
             ),
             const SizedBox(width: 12),
-            const Text('Creer une maison'),
+            const Flexible(child: Text('Creer une maison')),
           ],
         ),
         content: TextField(
@@ -345,13 +394,18 @@ class _HousePageState extends State<HousePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Annuler', style: TextStyle(color: AppTheme.textGrey(context))),
+            child: Text(
+              'Annuler',
+              style: TextStyle(color: AppTheme.textGrey(context)),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, controller.text),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: const Text('Creer'),
           ),
@@ -360,10 +414,22 @@ class _HousePageState extends State<HousePage> {
     );
 
     if (result != null && result.isNotEmpty) {
+      final houseName = result.trim();
+      if (houseName.isEmpty) {
+        _showErrorSnackbar('Veuillez entrer un nom de maison');
+        return;
+      }
+      if (houseName.length > 100) {
+        _showErrorSnackbar(
+          'Le nom de la maison doit contenir au maximum 100 caracteres',
+        );
+        return;
+      }
+
       setState(() => _isLoading = true);
       try {
         // Create the house and get the returned house object
-        final createdHouse = await _houseService.createHouse(result.trim());
+        final createdHouse = await _houseService.createHouse(houseName);
 
         // Switch to the newly created house
         await _houseService.switchActiveHouse(createdHouse.id);
@@ -381,9 +447,7 @@ class _HousePageState extends State<HousePage> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
-          );
+          _showErrorSnackbar(e);
           setState(() => _isLoading = false);
         }
       }
@@ -408,20 +472,27 @@ class _HousePageState extends State<HousePage> {
               child: const Icon(Icons.exit_to_app, color: Colors.red),
             ),
             const SizedBox(width: 12),
-            const Text('Quitter la maison ?'),
+            const Flexible(child: Text('Quitter la maison ?')),
           ],
         ),
-        content: const Text('Vous ne pourrez plus voir les plantes de cette maison.'),
+        content: const Text(
+          'Vous ne pourrez plus voir les plantes de cette maison.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Annuler', style: TextStyle(color: AppTheme.textGrey(context))),
+            child: Text(
+              'Annuler',
+              style: TextStyle(color: AppTheme.textGrey(context)),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: const Text('Quitter'),
           ),
@@ -436,9 +507,7 @@ class _HousePageState extends State<HousePage> {
         await _loadData();
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
-          );
+          _showErrorSnackbar(e);
           setState(() => _isLoading = false);
         }
       }
@@ -451,17 +520,24 @@ class _HousePageState extends State<HousePage> {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Se deconnecter ?'),
-        content: const Text('Vous devrez vous reconnecter pour acceder a vos plantes.'),
+        content: const Text(
+          'Vous devrez vous reconnecter pour acceder a vos plantes.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Annuler', style: TextStyle(color: AppTheme.textGrey(context))),
+            child: Text(
+              'Annuler',
+              style: TextStyle(color: AppTheme.textGrey(context)),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: const Text('Deconnexion'),
           ),
@@ -485,12 +561,14 @@ class _HousePageState extends State<HousePage> {
     return Scaffold(
       backgroundColor: AppTheme.lightBg(context),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppTheme.primaryColor),
+            )
           : CustomScrollView(
               slivers: [
                 // Header with user info
                 SliverAppBar(
-                  expandedHeight: 220,
+                  expandedHeight: (MediaQuery.of(context).size.height * 0.3).clamp(180.0, 280.0),
                   pinned: true,
                   backgroundColor: AppTheme.primaryColor,
                   leading: IconButton(
@@ -500,7 +578,11 @@ class _HousePageState extends State<HousePage> {
                         color: AppTheme.overlayWhite(context, 0.2),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                      child: const Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                     onPressed: () => Navigator.pop(context),
                   ),
@@ -512,7 +594,11 @@ class _HousePageState extends State<HousePage> {
                           color: AppTheme.overlayWhite(context, 0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.settings, color: Colors.white, size: 20),
+                        child: const Icon(
+                          Icons.settings,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                       onPressed: () {},
                     ),
@@ -537,8 +623,8 @@ class _HousePageState extends State<HousePage> {
                             right: -40,
                             top: -40,
                             child: Container(
-                              width: 180,
-                              height: 180,
+                              width: MediaQuery.of(context).size.width * 0.4,
+                              height: MediaQuery.of(context).size.width * 0.4,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: AppTheme.overlayWhite(context, 0.1),
@@ -549,8 +635,8 @@ class _HousePageState extends State<HousePage> {
                             left: -30,
                             bottom: 20,
                             child: Container(
-                              width: 100,
-                              height: 100,
+                              width: (MediaQuery.of(context).size.width * 0.22).clamp(70.0, 120.0),
+                              height: (MediaQuery.of(context).size.width * 0.22).clamp(70.0, 120.0),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: AppTheme.overlayWhite(context, 0.1),
@@ -580,7 +666,10 @@ class _HousePageState extends State<HousePage> {
                                   ),
                                   child: Center(
                                     child: Text(
-                                      _userEmail?.substring(0, 1).toUpperCase() ?? 'U',
+                                      _userEmail
+                                              ?.substring(0, 1)
+                                              .toUpperCase() ??
+                                          'U',
                                       style: TextStyle(
                                         fontSize: 36,
                                         fontWeight: FontWeight.bold,
@@ -603,13 +692,21 @@ class _HousePageState extends State<HousePage> {
                                 // Role badge
                                 if (_activeHouse != null)
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 6,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: AppTheme.overlayWhite(context, 0.2),
+                                      color: AppTheme.overlayWhite(
+                                        context,
+                                        0.2,
+                                      ),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(
-                                      _activeHouse!.isOwner ? 'Proprietaire' : 'Membre',
+                                      _activeHouse!.isOwner
+                                          ? 'Proprietaire'
+                                          : 'Membre',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 13,
@@ -637,26 +734,32 @@ class _HousePageState extends State<HousePage> {
                         if (_activeHouse != null) ...[
                           Row(
                             children: [
-                              Expanded(child: _buildStatCard(
-                                icon: Icons.eco,
-                                value: '${_activeHouse!.roomCount * 3}',
-                                label: 'Plantes',
-                                color: AppTheme.primaryColor,
-                              )),
+                              Expanded(
+                                child: _buildStatCard(
+                                  icon: Icons.eco,
+                                  value: '${_activeHouse!.roomCount * 3}',
+                                  label: 'Plantes',
+                                  color: AppTheme.primaryColor,
+                                ),
+                              ),
                               const SizedBox(width: 12),
-                              Expanded(child: _buildStatCard(
-                                icon: Icons.room,
-                                value: '${_activeHouse!.roomCount}',
-                                label: 'Pieces',
-                                color: Colors.blue,
-                              )),
+                              Expanded(
+                                child: _buildStatCard(
+                                  icon: Icons.room,
+                                  value: '${_activeHouse!.roomCount}',
+                                  label: 'Pieces',
+                                  color: Colors.blue,
+                                ),
+                              ),
                               const SizedBox(width: 12),
-                              Expanded(child: _buildStatCard(
-                                icon: Icons.people,
-                                value: '${_activeHouse!.memberCount}',
-                                label: 'Membres',
-                                color: Colors.purple,
-                              )),
+                              Expanded(
+                                child: _buildStatCard(
+                                  icon: Icons.people,
+                                  value: '${_activeHouse!.memberCount}',
+                                  label: 'Membres',
+                                  color: Colors.purple,
+                                ),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 24),
@@ -692,7 +795,9 @@ class _HousePageState extends State<HousePage> {
                               foregroundColor: Colors.red,
                               side: const BorderSide(color: Colors.red),
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
                         ),
@@ -747,10 +852,7 @@ class _HousePageState extends State<HousePage> {
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.textGrey(context),
-            ),
+            style: TextStyle(fontSize: 12, color: AppTheme.textGrey(context)),
           ),
         ],
       ),
@@ -799,7 +901,11 @@ class _HousePageState extends State<HousePage> {
                   color: AppTheme.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.home_rounded, color: AppTheme.primaryColor, size: 28),
+                child: const Icon(
+                  Icons.home_rounded,
+                  color: AppTheme.primaryColor,
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -877,7 +983,9 @@ class _HousePageState extends State<HousePage> {
                       backgroundColor: AppTheme.primaryColor,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
                 ),
@@ -905,7 +1013,13 @@ class _HousePageState extends State<HousePage> {
       ),
       child: Column(
         children: [
-          Icon(Icons.home_work_outlined, size: 64, color: AppTheme.isDark(context) ? Colors.grey.shade600 : Colors.grey.shade400),
+          Icon(
+            Icons.home_work_outlined,
+            size: 64,
+            color: AppTheme.isDark(context)
+                ? Colors.grey.shade600
+                : Colors.grey.shade400,
+          ),
           const SizedBox(height: 16),
           Text(
             'Aucune maison',
@@ -948,24 +1062,46 @@ class _HousePageState extends State<HousePage> {
           _buildActionTile(
             icon: Icons.meeting_room,
             title: 'Gerer les pieces',
-            subtitle: '${_activeHouse!.roomCount} piece${_activeHouse!.roomCount > 1 ? 's' : ''} dans cette maison',
+            subtitle:
+                '${_activeHouse!.roomCount} piece${_activeHouse!.roomCount > 1 ? 's' : ''} dans cette maison',
             color: Colors.blue,
             onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const RoomListPage()),
-              ).then((_) => _loadData()); // Refresh after returning
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (_) => const RoomListPage()))
+                  .then((_) => _loadData()); // Refresh after returning
             },
           ),
           Divider(color: AppTheme.borderLight(context), height: 24),
           _buildActionTile(
             icon: Icons.people,
             title: 'Gerer les membres',
-            subtitle: '${_activeHouse!.memberCount} membre${_activeHouse!.memberCount > 1 ? 's' : ''} dans cette maison',
+            subtitle:
+                '${_activeHouse!.memberCount} membre${_activeHouse!.memberCount > 1 ? 's' : ''} dans cette maison',
             color: Colors.purple,
             onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => HouseMembersPage(house: _activeHouse!)),
-              ).then((_) => _loadData()); // Refresh after returning
+              Navigator.of(context)
+                  .push(
+                    MaterialPageRoute(
+                      builder: (_) => HouseMembersPage(house: _activeHouse!),
+                    ),
+                  )
+                  .then((_) => _loadData()); // Refresh after returning
+            },
+          ),
+          Divider(color: AppTheme.borderLight(context), height: 24),
+          _buildActionTile(
+            icon: Icons.beach_access,
+            title: 'Mode vacances',
+            subtitle: 'Deleguez l\'entretien de vos plantes',
+            color: Colors.orange,
+            onTap: () {
+              Navigator.of(context)
+                  .push(
+                    MaterialPageRoute(
+                      builder: (_) => VacationPage(house: _activeHouse!),
+                    ),
+                  )
+                  .then((_) => _loadData());
             },
           ),
           // Delete house option (Owner only)
@@ -994,7 +1130,9 @@ class _HousePageState extends State<HousePage> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(
-          _notificationsEnabled ? Icons.notifications_active : Icons.notifications_off,
+          _notificationsEnabled
+              ? Icons.notifications_active
+              : Icons.notifications_off,
           color: AppTheme.primaryColor,
         ),
       ),
@@ -1023,7 +1161,10 @@ class _HousePageState extends State<HousePage> {
         if (value) {
           // Enable: schedule notifications for plants in this house
           final plants = await _plantService.getMyPlants();
-          await _notificationService.scheduleAllReminders(plants, houseId: _activeHouse!.id);
+          await _notificationService.scheduleAllReminders(
+            plants,
+            houseId: _activeHouse!.id,
+          );
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -1067,15 +1208,17 @@ class _HousePageState extends State<HousePage> {
         ),
         child: Icon(icon, color: color),
       ),
-      title: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.w600),
-      ),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(
         subtitle,
         style: TextStyle(color: AppTheme.textGrey(context), fontSize: 12),
       ),
-      trailing: Icon(Icons.chevron_right, color: AppTheme.isDark(context) ? Colors.grey.shade600 : Colors.grey.shade400),
+      trailing: Icon(
+        Icons.chevron_right,
+        color: AppTheme.isDark(context)
+            ? Colors.grey.shade600
+            : Colors.grey.shade400,
+      ),
     );
   }
 }

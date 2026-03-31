@@ -7,9 +7,10 @@ import 'package:planto/core/theme/app_theme.dart';
 class PhotoGalleryPage extends StatefulWidget {
   final String plantId;
   final String plantName;
+  final bool canManage;
   final PhotoGalleryService? photoGalleryService;
 
-  const PhotoGalleryPage({super.key, required this.plantId, required this.plantName, this.photoGalleryService});
+  const PhotoGalleryPage({super.key, required this.plantId, required this.plantName, this.canManage = true, this.photoGalleryService});
 
   @override
   State<PhotoGalleryPage> createState() => _PhotoGalleryPageState();
@@ -114,7 +115,8 @@ class _PhotoGalleryPageState extends State<PhotoGalleryPage> {
       appBar: AppBar(
         title: Text('Photos - ${widget.plantName}'),
         actions: [
-          IconButton(icon: const Icon(Icons.add_a_photo), onPressed: _addPhoto),
+          if (widget.canManage)
+            IconButton(icon: const Icon(Icons.add_a_photo), onPressed: _addPhoto),
         ],
       ),
       body: _isLoading
@@ -128,11 +130,12 @@ class _PhotoGalleryPageState extends State<PhotoGalleryPage> {
                       const SizedBox(height: 16),
                       Text('Aucune photo', style: TextStyle(color: Colors.grey.shade600)),
                       const SizedBox(height: 12),
-                      ElevatedButton.icon(
-                        onPressed: _addPhoto,
-                        icon: const Icon(Icons.add_a_photo),
-                        label: const Text('Ajouter'),
-                      ),
+                      if (widget.canManage)
+                        ElevatedButton.icon(
+                          onPressed: _addPhoto,
+                          icon: const Icon(Icons.add_a_photo),
+                          label: const Text('Ajouter'),
+                        ),
                     ],
                   ),
                 )
@@ -153,7 +156,7 @@ class _PhotoGalleryPageState extends State<PhotoGalleryPage> {
 
                       return GestureDetector(
                         onTap: () => _viewFullscreen(i),
-                        onLongPress: () => _showPhotoOptions(photo),
+                        onLongPress: widget.canManage ? () => _showPhotoOptions(photo) : null,
                         child: Stack(
                           fit: StackFit.expand,
                           children: [

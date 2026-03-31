@@ -23,6 +23,7 @@ services:
       - "${DB_PORT:-5433}:5432"
     volumes:
       - plant-data:/var/lib/postgresql/data
+      - ./docker/init:/docker-entrypoint-initdb.d
     networks:
       - plant-network
     healthcheck:
@@ -53,13 +54,12 @@ services:
   sonarqube:
     image: sonarqube:lts-community
     container_name: plant-sonarqube
-    profiles:
-      - quality
     restart: unless-stopped
     environment:
-      SONAR_JDBC_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-plant_db}
+      SONAR_JDBC_URL: jdbc:postgresql://postgres:5432/sonar_db
       SONAR_JDBC_USERNAME: ${DB_USER:-plant_user}
       SONAR_JDBC_PASSWORD: ${DB_PASSWORD:-plant_pass}
+      SONAR_SEARCH_JAVAADDITIONALOPTS: "-Dnode.store.allow_mmap=false"
     ports:
       - "${SONAR_PORT:-9000}:9000"
     volumes:

@@ -692,7 +692,7 @@ class DtoCoverageTest {
         PlantDetailDTO dto = new PlantDetailDTO(
                 plantId, "My Rose", "photo.jpg", today, now, 7, today.plusDays(7),
                 false, "Some notes", false, false, false, Exposure.SUN, now,
-                room, species, null, new BigDecimal("15.5"), List.of(log));
+                room, species, null, new BigDecimal("15.5"), List.of(log), true);
 
         assertEquals(plantId, dto.id());
         assertEquals("My Rose", dto.nickname());
@@ -713,6 +713,7 @@ class DtoCoverageTest {
         assertNull(dto.customSpecies());
         assertEquals(new BigDecimal("15.5"), dto.potDiameterCm());
         assertEquals(1, dto.recentCareLogs().size());
+        assertTrue(dto.canManage());
     }
 
     @Test

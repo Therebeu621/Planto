@@ -11,7 +11,12 @@ class OnboardingPage extends StatefulWidget {
   final HouseService? houseService;
   final RoomService? roomService;
 
-  const OnboardingPage({super.key, required this.userEmail, this.houseService, this.roomService});
+  const OnboardingPage({
+    super.key,
+    required this.userEmail,
+    this.houseService,
+    this.roomService,
+  });
 
   @override
   State<OnboardingPage> createState() => _OnboardingPageState();
@@ -67,7 +72,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
     } else if (_currentStep == 1) {
       // Auto-fill room name from type if empty
       if (_roomNameController.text.trim().isEmpty) {
-        final type = _roomTypes.firstWhere((t) => t['value'] == _selectedRoomType);
+        final type = _roomTypes.firstWhere(
+          (t) => t['value'] == _selectedRoomType,
+        );
         _roomNameController.text = type['name'];
       }
       setState(() => _errorMessage = null);
@@ -92,7 +99,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
       // Create first room
       final roomName = _roomNameController.text.trim().isNotEmpty
           ? _roomNameController.text.trim()
-          : _roomTypes.firstWhere((t) => t['value'] == _selectedRoomType)['name'];
+          : _roomTypes.firstWhere(
+              (t) => t['value'] == _selectedRoomType,
+            )['name'];
       await _roomService.createRoom(roomName, _selectedRoomType);
 
       if (mounted) {
@@ -114,9 +123,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   void _skipToHome() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => HomePage(userEmail: widget.userEmail),
-      ),
+      MaterialPageRoute(builder: (_) => HomePage(userEmail: widget.userEmail)),
     );
   }
 
@@ -165,26 +172,47 @@ class _OnboardingPageState extends State<OnboardingPage> {
     );
   }
 
+  Widget _buildScrollableStep({required Widget child}) {
+    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: EdgeInsets.fromLTRB(32, 12, 32, 24 + keyboardInset),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
   /// Step 1: Welcome + House name
   Widget _buildWelcomeStep() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
+    return _buildScrollableStep(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // Plant icon
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.eco,
-              size: 50,
-              color: AppTheme.primaryColor,
-            ),
+          Builder(
+            builder: (context) {
+              final iconSize = (MediaQuery.of(context).size.width * 0.22).clamp(70.0, 120.0);
+              return Container(
+                width: iconSize,
+                height: iconSize,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.eco,
+                  size: iconSize * 0.5,
+                  color: AppTheme.primaryColor,
+                ),
+              );
+            },
           ),
           const SizedBox(height: 32),
           Text(
@@ -222,13 +250,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
             child: TextField(
               controller: _houseNameController,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               decoration: InputDecoration(
                 hintText: 'Ex: Mon Appartement',
-                prefixIcon: const Icon(Icons.home_rounded, color: AppTheme.primaryColor),
+                prefixIcon: const Icon(
+                  Icons.home_rounded,
+                  color: AppTheme.primaryColor,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
@@ -249,7 +277,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
           // Next button
           SizedBox(
             width: double.infinity,
-            height: 52,
             child: ElevatedButton(
               onPressed: _nextStep,
               style: ElevatedButton.styleFrom(
@@ -271,7 +298,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
             onPressed: _skipToHome,
             child: Text(
               'Passer',
-              style: TextStyle(color: AppTheme.textSecondaryC(context), fontSize: 14),
+              style: TextStyle(
+                color: AppTheme.textSecondaryC(context),
+                fontSize: 14,
+              ),
             ),
           ),
         ],
@@ -281,8 +311,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   /// Step 2: Choose first room
   Widget _buildRoomStep() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
+    return _buildScrollableStep(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -321,7 +350,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           const SizedBox(height: 28),
           // Room type grid
           SizedBox(
-            height: 220,
+            height: MediaQuery.of(context).size.height * 0.28,
             child: GridView.builder(
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -399,7 +428,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
               style: const TextStyle(fontSize: 16),
               decoration: InputDecoration(
                 hintText: 'Nom personnalise (optionnel)',
-                hintStyle: TextStyle(fontSize: 14, color: AppTheme.isDark(context) ? Colors.grey.shade600 : Colors.grey.shade400),
+                hintStyle: TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.isDark(context)
+                      ? Colors.grey.shade600
+                      : Colors.grey.shade400,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide(color: AppTheme.borderLight(context)),
@@ -408,7 +442,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide(color: AppTheme.borderLight(context)),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
             ),
           ),
@@ -422,7 +459,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
-            height: 52,
             child: ElevatedButton(
               onPressed: _nextStep,
               style: ElevatedButton.styleFrom(
@@ -449,10 +485,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final roomName = _roomNameController.text.trim().isNotEmpty
         ? _roomNameController.text.trim()
         : _roomTypes.firstWhere((t) => t['value'] == _selectedRoomType)['name'];
-    final roomType = _roomTypes.firstWhere((t) => t['value'] == _selectedRoomType);
+    final roomType = _roomTypes.firstWhere(
+      (t) => t['value'] == _selectedRoomType,
+    );
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
+    return _buildScrollableStep(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -481,7 +518,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
           const SizedBox(height: 8),
           Text(
             'Voici ce que nous allons creer :',
-            style: TextStyle(fontSize: 15, color: AppTheme.textSecondaryC(context)),
+            style: TextStyle(
+              fontSize: 15,
+              color: AppTheme.textSecondaryC(context),
+            ),
           ),
           const SizedBox(height: 32),
           // Summary card
@@ -510,27 +550,33 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         color: AppTheme.primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.home_rounded, color: AppTheme.primaryColor),
+                      child: const Icon(
+                        Icons.home_rounded,
+                        color: AppTheme.primaryColor,
+                      ),
                     ),
                     const SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Maison',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.textSecondaryC(context),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Maison',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textSecondaryC(context),
+                            ),
                           ),
-                        ),
-                        Text(
-                          _houseNameController.text.trim(),
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
+                          Text(
+                            _houseNameController.text.trim(),
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -552,24 +598,27 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Premiere piece',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.textSecondaryC(context),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Premiere piece',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textSecondaryC(context),
+                            ),
                           ),
-                        ),
-                        Text(
-                          roomName,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
+                          Text(
+                            roomName,
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -586,7 +635,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
           const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
-            height: 52,
             child: ElevatedButton(
               onPressed: _isLoading ? null : _finishOnboarding,
               style: ElevatedButton.styleFrom(
@@ -608,7 +656,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     )
                   : const Text(
                       'C\'est parti !',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
             ),
           ),

@@ -130,11 +130,7 @@ public class PlantService {
     public List<PlantResponseDTO> getPlantsByUser(UUID userId, UUID roomId, HealthStatus status) {
         List<UserPlantEntity> plants;
 
-        if (roomId != null && status != null) {
-            plants = UserPlantEntity.list(
-                    "user.id = ?1 and room.id = ?2 and healthStatus = ?3",
-                    userId, roomId, status);
-        } else if (roomId != null) {
+        if (roomId != null) {
             plants = UserPlantEntity.findByUserAndRoom(userId, roomId);
         } else {
             plants = UserPlantEntity.findByUser(userId);
@@ -160,6 +156,7 @@ public class PlantService {
     /**
      * Get a plant by ID with ownership or delegation check.
      * Allows access if the user owns the plant OR is a delegate for the plant owner (vacation mode).
+     * Used for write endpoints (update, delete, water, care-log creation, photo management).
      */
     public UserPlantEntity getPlantById(UUID userId, UUID plantId) {
         UserPlantEntity plant = UserPlantEntity.findById(plantId);
@@ -177,11 +174,55 @@ public class PlantService {
     }
 
     /**
+     * Get a plant by ID with read-only access.
+     * Allows access if the user owns the plant, is a vacation delegate,
+     * OR is a member of the same house (via the plant's room).
+     */
+    public UserPlantEntity getPlantByIdReadOnly(UUID userId, UUID plantId) {
+        UserPlantEntity plant = UserPlantEntity.findById(plantId);
+        if (plant == null) {
+            throw new NotFoundException("Plant not found");
+        }
+        // Owner or delegate: full access
+        if (plant.user.id.equals(userId)) {
+            return plant;
+        }
+        List<UUID> delegatorIds = vacationService.getDelegatorIdsForDelegate(userId);
+        if (delegatorIds.contains(plant.user.id)) {
+            return plant;
+        }
+        // Housemate: read access via the plant's room
+        if (plant.room != null) {
+            Hibernate.initialize(plant.room);
+            if (plant.room.house != null) {
+                UserHouseEntity membership = UserHouseEntity.findByUserAndHouse(userId, plant.room.house.id);
+                if (membership != null) {
+                    return plant;
+                }
+            }
+        }
+        throw new ForbiddenException("You don't have access to this plant");
+    }
+
+    /**
+     * Check if a user can manage (write) a plant.
+     * True if the user owns the plant or is a vacation delegate.
+     * Must match the access rules of getPlantById() to avoid UI/backend mismatch.
+     */
+    public boolean canManagePlant(UUID userId, UserPlantEntity plant) {
+        if (plant.user.id.equals(userId)) {
+            return true;
+        }
+        List<UUID> delegatorIds = vacationService.getDelegatorIdsForDelegate(userId);
+        return delegatorIds.contains(plant.user.id);
+    }
+
+    /**
      * Get detailed plant information.
      */
     public PlantDetailDTO getPlantDetail(UUID userId, UUID plantId) {
-        UserPlantEntity plant = getPlantById(userId, plantId);
-        
+        UserPlantEntity plant = getPlantByIdReadOnly(userId, plantId);
+
         // Force initialization of lazy fields
         if (plant.room != null) {
             Hibernate.initialize(plant.room); // Force load
@@ -193,8 +234,9 @@ public class PlantService {
         if (plant.careLogs != null) {
             Hibernate.initialize(plant.careLogs); // Force load
         }
-        
-        return PlantDetailDTO.from(plant);
+
+        boolean canManage = canManagePlant(userId, plant);
+        return PlantDetailDTO.from(plant, canManage);
     }
 
     /**
@@ -332,8 +374,8 @@ public class PlantService {
      * Get care logs for a plant with optional action filter.
      */
     public List<CareLogDTO> getCareLogs(UUID userId, UUID plantId, String action) {
-        // Verify access (owner or delegate)
-        getPlantById(userId, plantId);
+        // Verify read access (owner, delegate, or housemate)
+        getPlantByIdReadOnly(userId, plantId);
 
         List<CareLogEntity> logs;
         if (action != null && !action.isBlank()) {
@@ -392,5 +434,23 @@ public class PlantService {
         }
 
         return CareLogDTO.from(log);
+    }
+
+    /**
+     * Delete a note-type care log for a plant.
+     */
+    @Transactional
+    public void deleteCareLog(UUID userId, UUID plantId, UUID logId) {
+        UserPlantEntity plant = getPlantById(userId, plantId);
+        CareLogEntity log = CareLogEntity.findById(logId);
+
+        if (log == null || log.plant == null || !log.plant.id.equals(plant.id)) {
+            throw new NotFoundException("Care log not found");
+        }
+        if (log.action != CareAction.NOTE) {
+            throw new ForbiddenException("Only note care logs can be deleted");
+        }
+
+        log.delete();
     }
 }

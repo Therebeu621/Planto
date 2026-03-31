@@ -60,6 +60,15 @@ class _ProfilePageState extends State<ProfilePage> {
   String _selectedLanguage = 'fr';
   TimeOfDay _reminderTime = const TimeOfDay(hour: 9, minute: 0);
 
+  String _formatErrorMessage(Object error) {
+    final message = error.toString();
+    const prefix = 'Exception: ';
+    if (message.startsWith(prefix)) {
+      return message.substring(prefix.length);
+    }
+    return message;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -246,6 +255,24 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           ElevatedButton(
             onPressed: () {
+              if (currentPasswordController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Le mot de passe actuel est requis'),
+                    backgroundColor: AppTheme.errorColor,
+                  ),
+                );
+                return;
+              }
+              if (newPasswordController.text.length < 8) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Le nouveau mot de passe doit contenir au moins 8 caracteres'),
+                    backgroundColor: AppTheme.errorColor,
+                  ),
+                );
+                return;
+              }
               if (newPasswordController.text != confirmPasswordController.text) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -281,7 +308,7 @@ class _ProfilePageState extends State<ProfilePage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Erreur: $e'),
+              content: Text(_formatErrorMessage(e)),
               backgroundColor: AppTheme.errorColor,
             ),
           );
@@ -640,19 +667,21 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildErrorState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
-          const SizedBox(height: 16),
-          Text('Erreur: $_error'),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _loadData,
-            child: const Text('Reessayer'),
-          ),
-        ],
+    return SingleChildScrollView(
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
+            const SizedBox(height: 16),
+            Text('Erreur: $_error'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadData,
+              child: const Text('Reessayer'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -779,6 +808,11 @@ class _ProfilePageState extends State<ProfilePage> {
                     Expanded(child: _buildInfoRow(Icons.email, 'Email', _user!.email)),
                     if (!_user!.emailVerified)
                       TextButton(
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                         onPressed: _handleVerifyEmail,
                         child: const Text('Verifier', style: TextStyle(fontSize: 12)),
                       )
@@ -809,9 +843,12 @@ class _ProfilePageState extends State<ProfilePage> {
             style: TextStyle(color: AppTheme.textSecondaryC(context)),
           ),
         ),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.w500),
+        Flexible(
+          child: Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.w500),
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );
@@ -940,9 +977,9 @@ class _ProfilePageState extends State<ProfilePage> {
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 4,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: 0.75,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 0.72,
           ),
           itemCount: g.badges.length,
           itemBuilder: (context, index) {
@@ -963,25 +1000,32 @@ class _ProfilePageState extends State<ProfilePage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: badge.unlocked
-                    ? AppTheme.primaryColor.withOpacity(0.1)
-                    : AppTheme.lightBg(context),
-              ),
-              child: Opacity(
-                opacity: badge.unlocked ? 1.0 : 0.3,
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
+            child: Opacity(
+              opacity: badge.unlocked ? 1.0 : 0.35,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
                   child: Image.network(
                     '$baseUrl${badge.iconUrl}',
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => Icon(
-                      Icons.emoji_events,
-                      color: badge.unlocked
-                          ? AppTheme.primaryColor
-                          : Colors.grey,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Colors.white,
+                      child: Icon(
+                        Icons.emoji_events,
+                        color: badge.unlocked
+                            ? AppTheme.primaryColor
+                            : Colors.grey,
+                      ),
                     ),
                   ),
                 ),
@@ -989,18 +1033,23 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            badge.name,
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: badge.unlocked ? FontWeight.w600 : FontWeight.normal,
-              color: badge.unlocked
-                  ? AppTheme.textPrimaryC(context)
-                  : AppTheme.textSecondaryC(context),
+          SizedBox(
+            height: 28,
+            child: Center(
+              child: Text(
+                badge.name,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: badge.unlocked ? FontWeight.w600 : FontWeight.normal,
+                  color: badge.unlocked
+                      ? AppTheme.textPrimaryC(context)
+                      : AppTheme.textSecondaryC(context),
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -1016,18 +1065,25 @@ class _ProfilePageState extends State<ProfilePage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
+            Container(
               width: 80,
               height: 80,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Opacity(
                 opacity: badge.unlocked ? 1.0 : 0.3,
-                child: Image.network(
-                  '$baseUrl${badge.iconUrl}',
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => Icon(
-                    Icons.emoji_events,
-                    size: 60,
-                    color: badge.unlocked ? AppTheme.primaryColor : Colors.grey,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    '$baseUrl${badge.iconUrl}',
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Icon(
+                      Icons.emoji_events,
+                      size: 60,
+                      color: badge.unlocked ? AppTheme.primaryColor : Colors.grey,
+                    ),
                   ),
                 ),
               ),
@@ -1314,17 +1370,6 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const Divider(height: 1),
               ListTile(
-                leading: const Icon(Icons.download),
-                title: const Text('Exporter mes donnees'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Fonctionnalite a venir')),
-                  );
-                },
-              ),
-              const Divider(height: 1),
-              ListTile(
                 leading: Icon(Icons.logout, color: AppTheme.errorColor),
                 title: Text(
                   'Deconnexion',
@@ -1401,12 +1446,14 @@ class _ProfilePageState extends State<ProfilePage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (house.isOwner)
-                        Chip(
-                          label: const Text('Proprietaire'),
-                          backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-                          labelStyle: const TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.primaryColor,
+                        Flexible(
+                          child: Chip(
+                            label: const Text('Proprietaire'),
+                            backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                            labelStyle: const TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.primaryColor,
+                            ),
                           ),
                         ),
                       const SizedBox(width: 4),

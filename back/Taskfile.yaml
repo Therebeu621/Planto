@@ -155,7 +155,7 @@ tasks:
           --set grafana.service.nodePort=30030 \
           --set grafana.adminPassword=admin \
           --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false \
-          --set alertmanager.enabled=false \
+          --set alertmanager.enabled=true \
           --set grafana.sidecar.dashboards.enabled=true \
           --set grafana.additionalDataSources[0].name=Loki \
           --set grafana.additionalDataSources[0].uid=loki \

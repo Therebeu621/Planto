@@ -50,6 +50,18 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
+    const disposableDomains = [
+      'indevgo.com', 'test.com', 'example.com', 'mailinator.com',
+      'guerrillamail.com', 'tempmail.com', 'throwam.com', 'yopmail.com',
+      'sharklasers.com', 'guerrillamailblock.com', 'grr.la', 'spam4.me',
+      'trashmail.com', 'maildrop.cc', 'dispostable.com', 'fakeinbox.com',
+    ];
+    final emailDomain = _emailController.text.trim().split('@').last.toLowerCase();
+    if (disposableDomains.contains(emailDomain)) {
+      setState(() => _errorMessage = 'Les adresses email temporaires ne sont pas acceptées. Utilisez une vraie adresse email.');
+      return;
+    }
+
     if (_passwordController.text.length < 8) {
        setState(() => _errorMessage = 'Le mot de passe doit contenir au moins 8 caractères');
        return;
@@ -73,8 +85,8 @@ class _RegisterPageState extends State<RegisterPage> {
           MaterialPageRoute(
             builder: (_) => EmailVerificationPage(
               email: email,
-              onVerified: () {
-                Navigator.of(context).pushReplacement(
+              onVerified: (ctx) {
+                Navigator.of(ctx).pushReplacement(
                   MaterialPageRoute(builder: (_) => OnboardingPage(userEmail: email)),
                 );
               },
@@ -131,10 +143,6 @@ class _RegisterPageState extends State<RegisterPage> {
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.scaffoldBg(context),
-      ),
-      child: CustomPaint(
-        size: Size.infinite,
-        painter: LeafPatternPainter(),
       ),
     );
   }
@@ -295,9 +303,12 @@ class _RegisterPageState extends State<RegisterPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          'Déjà un compte ? ',
-          style: TextStyle(color: AppTheme.textSecondaryC(context)),
+        Flexible(
+          child: Text(
+            'Déjà un compte ? ',
+            style: TextStyle(color: AppTheme.textSecondaryC(context)),
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
         TextButton(
           onPressed: () {

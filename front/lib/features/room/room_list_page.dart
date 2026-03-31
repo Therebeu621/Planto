@@ -58,7 +58,7 @@ class _RoomListPageState extends State<RoomListPage> {
               children: const [
                 Icon(Icons.check_circle, color: Colors.white, size: 20),
                 SizedBox(width: 8),
-                Text('Piece creee avec succes !'),
+                Flexible(child: Text('Piece creee avec succes !')),
               ],
             ),
             backgroundColor: AppTheme.successColor,
@@ -96,7 +96,7 @@ class _RoomListPageState extends State<RoomListPage> {
               child: const Icon(Icons.delete_outline, color: Colors.red),
             ),
             const SizedBox(width: 12),
-            const Text('Supprimer ?'),
+            const Flexible(child: Text('Supprimer ?')),
           ],
         ),
         content: Text('Voulez-vous supprimer "${room.name}" ?'),
@@ -148,7 +148,7 @@ class _RoomListPageState extends State<RoomListPage> {
               slivers: [
                 // Header
                 SliverAppBar(
-                  expandedHeight: 250,
+                  expandedHeight: MediaQuery.of(context).size.height * 0.3,
                   pinned: true,
                   backgroundColor: Colors.blue,
                   leading: IconButton(
@@ -182,8 +182,8 @@ class _RoomListPageState extends State<RoomListPage> {
                             right: -30,
                             top: -30,
                             child: Container(
-                              width: 150,
-                              height: 150,
+                              width: MediaQuery.of(context).size.width * 0.35,
+                              height: MediaQuery.of(context).size.width * 0.35,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: AppTheme.overlayWhite(context, 0.1),

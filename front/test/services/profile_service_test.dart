@@ -110,32 +110,50 @@ void main() {
       mockInterceptor.addMockResponse('/api/v1/auth/me/password');
       await service.changePassword(
         currentPassword: 'old',
-        newPassword: 'new',
+        newPassword: 'newPass123',
       );
       final request = mockInterceptor.capturedRequests.last;
       expect(request.data['currentPassword'], 'old');
-      expect(request.data['newPassword'], 'new');
+      expect(request.data['newPassword'], 'newPass123');
     });
 
-    test('401 error throws wrong password', () async {
+    test('400 wrong current password throws friendly message', () async {
       mockInterceptor.addMockResponse('/api/v1/auth/me/password',
-          isError: true, errorStatusCode: 401);
+          isError: true,
+          errorStatusCode: 400,
+          data: {'message': 'Mot de passe actuel incorrect'});
       expect(
         () => service.changePassword(
-            currentPassword: 'wrong', newPassword: 'new'),
+            currentPassword: 'wrong', newPassword: 'newPass123'),
         throwsA(predicate((e) =>
             e is Exception &&
             e.toString().contains('Mot de passe actuel incorrect'))),
       );
     });
 
-    test('generic error throws exception', () async {
+    test('400 validation error throws friendly message', () async {
+      mockInterceptor.addMockResponse('/api/v1/auth/me/password',
+          isError: true,
+          errorStatusCode: 400,
+          data: {'message': 'changePassword.newPassword: Password must be at least 8 characters'});
+      expect(
+        () => service.changePassword(
+            currentPassword: 'old', newPassword: 'short'),
+        throwsA(predicate((e) =>
+            e is Exception &&
+            e.toString().contains('Le nouveau mot de passe doit contenir au moins 8 caracteres'))),
+      );
+    });
+
+    test('generic error throws fallback message', () async {
       mockInterceptor.addMockResponse('/api/v1/auth/me/password',
           isError: true, errorStatusCode: 500);
       expect(
         () => service.changePassword(
-            currentPassword: 'old', newPassword: 'new'),
-        throwsException,
+            currentPassword: 'old', newPassword: 'newPass123'),
+        throwsA(predicate((e) =>
+            e is Exception &&
+            e.toString().contains('Impossible de changer le mot de passe pour le moment'))),
       );
     });
   });

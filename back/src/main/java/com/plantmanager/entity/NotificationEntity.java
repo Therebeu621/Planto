@@ -41,6 +41,14 @@ public class NotificationEntity extends PanacheEntityBase {
     @Column(name = "read")
     public Boolean read = false;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invitation_id")
+    public HouseInvitationEntity invitation;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "house_id")
+    public HouseEntity house;
+
     @Column(name = "created_at")
     public OffsetDateTime createdAt;
 

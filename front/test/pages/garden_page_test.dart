@@ -21,47 +21,55 @@ void main() {
   });
 
   void addHouse() {
-    mockInterceptor.addMockResponse('/api/v1/houses', data: [
-      {
-        'id': 'h1',
-        'name': 'Maison',
-        'inviteCode': 'ABC',
-        'memberCount': 1,
-        'roomCount': 1,
-        'isActive': true,
-      },
-    ]);
+    mockInterceptor.addMockResponse(
+      '/api/v1/houses',
+      data: [
+        {
+          'id': 'h1',
+          'name': 'Maison',
+          'inviteCode': 'ABC',
+          'memberCount': 1,
+          'roomCount': 1,
+          'isActive': true,
+        },
+      ],
+    );
   }
 
   void addCultures({String status = 'CROISSANCE', bool withLogs = false}) {
     addHouse();
-    mockInterceptor.addMockResponse('/api/v1/garden/house/h1', data: [
-      {
-        'id': 'c1',
-        'plantName': 'Tomate',
-        'variety': 'Coeur de boeuf',
-        'status': status,
-        'statusDisplay': status,
-        'sowDate': '2026-03-01',
-        'expectedHarvestDate': '2026-07-01',
-        'harvestQuantity': status == 'RECOLTE' ? '2 kg' : null,
-        'growthLogs': withLogs
-            ? [
-                {
-                  'newStatus': 'GERMINATION',
-                  'newStatusDisplay': 'Germination',
-                  'notes': 'Premieres pousses'
-                },
-              ]
-            : [],
-      },
-    ]);
+    mockInterceptor.addMockResponse(
+      '/api/v1/garden/house/h1',
+      data: [
+        {
+          'id': 'c1',
+          'plantName': 'Tomate',
+          'variety': 'Coeur de boeuf',
+          'status': status,
+          'statusDisplay': status,
+          'sowDate': '2026-03-01',
+          'expectedHarvestDate': '2026-07-01',
+          'harvestQuantity': status == 'RECOLTE' ? '2 kg' : null,
+          'growthLogs': withLogs
+              ? [
+                  {
+                    'newStatus': 'GERMINATION',
+                    'newStatusDisplay': 'Germination',
+                    'notes': 'Premieres pousses',
+                  },
+                ]
+              : [],
+        },
+      ],
+    );
   }
 
   void addEmptyCultures() {
     addHouse();
     mockInterceptor.addMockResponse(
-        '/api/v1/garden/house/h1', data: <Map<String, dynamic>>[]);
+      '/api/v1/garden/house/h1',
+      data: <Map<String, dynamic>>[],
+    );
   }
 
   Widget buildPage() {
@@ -111,18 +119,20 @@ void main() {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
-      expect(find.text('Tout'), findsOneWidget);
-      expect(find.text('Semis'), findsOneWidget);
-      expect(find.text('Germination'), findsOneWidget);
-      expect(find.text('Croissance'), findsOneWidget);
-      expect(find.text('Floraison'), findsOneWidget);
-      expect(find.text('Recolte'), findsOneWidget);
-      expect(find.text('Termine'), findsOneWidget);
+      expect(find.widgetWithText(FilterChip, 'Tout'), findsOneWidget);
+      expect(find.widgetWithText(FilterChip, 'Semis'), findsOneWidget);
+      expect(find.widgetWithText(FilterChip, 'Germination'), findsOneWidget);
+      expect(find.widgetWithText(FilterChip, 'Croissance'), findsOneWidget);
+      expect(find.widgetWithText(FilterChip, 'Floraison'), findsOneWidget);
+      expect(find.widgetWithText(FilterChip, 'Recolte'), findsOneWidget);
+      expect(find.widgetWithText(FilterChip, 'Termine'), findsOneWidget);
 
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('shows culture card with plant name and variety', (tester) async {
+    testWidgets('shows culture card with plant name and variety', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -166,8 +176,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('shows "Etape suivante" button for non-terminated cultures',
-        (tester) async {
+    testWidgets('shows "Etape suivante" button for non-terminated cultures', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -181,8 +192,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('does not show "Etape suivante" for terminated cultures',
-        (tester) async {
+    testWidgets('does not show "Etape suivante" for terminated cultures', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -250,7 +262,7 @@ void main() {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Semis'));
+      await tester.tap(find.widgetWithText(FilterChip, 'Semis'));
       await tester.pumpAndSettle();
 
       // Filter is applied
@@ -273,7 +285,7 @@ void main() {
 
       expect(find.text('Nouveau semis'), findsOneWidget);
       expect(find.text('Nom de la plante *'), findsOneWidget);
-      expect(find.text('Variete'), findsOneWidget);
+      expect(find.text('Espèce / Variété *'), findsOneWidget);
       expect(find.text('Notes'), findsOneWidget);
       expect(find.text('Annuler'), findsOneWidget);
       expect(find.text('Semer'), findsOneWidget);
@@ -307,8 +319,10 @@ void main() {
       final origOnError = suppressOverflowErrors();
 
       addCultures();
-      mockInterceptor.addMockResponse('/api/v1/garden/house/h1',
-          data: {'id': 'c2', 'plantName': 'Basilic', 'status': 'SEMIS'});
+      mockInterceptor.addMockResponse(
+        '/api/v1/garden/house/h1',
+        data: {'id': 'c2', 'plantName': 'Basilic', 'status': 'SEMIS'},
+      );
 
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
@@ -318,11 +332,17 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(
-          find.widgetWithText(TextField, 'Nom de la plante *'), 'Basilic');
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Semer'));
+        find.widgetWithText(TextField, 'Nom de la plante *'),
+        'Basilic',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Espèce / Variété *'),
+        'Basilic',
+      );
+      await tester.tap(find.text('Semer'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Semis ajoute'), findsOneWidget);
+      expect(find.textContaining('Semis ajoute'), findsOneWidget);
 
       FlutterError.onError = origOnError;
     });
@@ -336,8 +356,7 @@ void main() {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
-      // Tap the card
-      await tester.tap(find.text('Tomate'));
+      await tester.tap(find.text('Etape suivante'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Passer a:'), findsOneWidget);
@@ -347,23 +366,25 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('status update dialog shows harvest field for RECOLTE transition',
-        (tester) async {
-      setupPageTest(tester);
-      addTearDown(() => tester.view.resetPhysicalSize());
-      final origOnError = suppressOverflowErrors();
+    testWidgets(
+      'status update dialog shows harvest field for RECOLTE transition',
+      (tester) async {
+        setupPageTest(tester);
+        addTearDown(() => tester.view.resetPhysicalSize());
+        final origOnError = suppressOverflowErrors();
 
-      addCultures(status: 'FLORAISON');
-      await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+        addCultures(status: 'FLORAISON');
+        await tester.pumpWidget(buildPage());
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Tomate'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Etape suivante'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Quantite recoltee'), findsOneWidget);
+        expect(find.text('Quantite recoltee'), findsOneWidget);
 
-      FlutterError.onError = origOnError;
-    });
+        FlutterError.onError = origOnError;
+      },
+    );
 
     testWidgets('each status has correct icon', (tester) async {
       setupPageTest(tester);
@@ -379,14 +400,17 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('empty houses results in loading completing with empty state',
-        (tester) async {
+    testWidgets('empty houses results in loading completing with empty state', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      mockInterceptor.addMockResponse('/api/v1/houses',
-          data: <Map<String, dynamic>>[]);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses',
+        data: <Map<String, dynamic>>[],
+      );
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
@@ -395,22 +419,26 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('culture without variety does not show variety text',
-        (tester) async {
+    testWidgets('culture without variety does not show variety text', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
       addHouse();
-      mockInterceptor.addMockResponse('/api/v1/garden/house/h1', data: [
-        {
-          'id': 'c1',
-          'plantName': 'Basilic',
-          'variety': null,
-          'status': 'SEMIS',
-          'statusDisplay': 'Semis',
-        },
-      ]);
+      mockInterceptor.addMockResponse(
+        '/api/v1/garden/house/h1',
+        data: [
+          {
+            'id': 'c1',
+            'plantName': 'Basilic',
+            'variety': null,
+            'status': 'SEMIS',
+            'statusDisplay': 'Semis',
+          },
+        ],
+      );
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 

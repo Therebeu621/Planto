@@ -20,8 +20,8 @@ void main() {
         expect(AppConstants.geminiApiKey, isA<String>());
       });
 
-      test('geminiModel is gemini-flash-latest', () {
-        expect(AppConstants.geminiModel, 'gemini-flash-latest');
+      test('geminiModel is gemini-2.5-flash', () {
+        expect(AppConstants.geminiModel, 'gemini-2.5-flash');
       });
     });
 
@@ -40,10 +40,6 @@ void main() {
           debugDefaultTargetPlatformOverride = null;
         });
         expect(AppConstants.apiBaseUrl, 'http://10.0.2.2:8080');
-      });
-
-      test('physicalDeviceIp is the Mac IP address', () {
-        expect(AppConstants.physicalDeviceIp, '10.236.15.213');
       });
 
       test('apiTimeout is 30 seconds', () {

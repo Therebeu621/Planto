@@ -1,3 +1,4 @@
+import 'package:device_preview/device_preview.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -31,8 +32,11 @@ void main() async {
   }
 
   runApp(
-    const ProviderScope(
-      child: PlantoApp(),
+    DevicePreview(
+      enabled: kDebugMode,
+      builder: (context) => const ProviderScope(
+        child: PlantoApp(),
+      ),
     ),
   );
 }
@@ -47,6 +51,8 @@ class PlantoApp extends ConsumerWidget {
     return MaterialApp(
       title: 'PLANTO',
       debugShowCheckedModeBanner: false,
+      locale: DevicePreview.locale(context),
+      builder: DevicePreview.appBuilder,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,

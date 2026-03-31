@@ -43,6 +43,10 @@ public class PlantPhotoEntity extends PanacheEntityBase {
         return find("plant.id = ?1 and isPrimary = true", plantId).firstResult();
     }
 
+    public static PlantPhotoEntity findByPlantAndPath(UUID plantId, String photoPath) {
+        return find("plant.id = ?1 and photoPath = ?2", plantId, photoPath).firstResult();
+    }
+
     public static long countByPlant(UUID plantId) {
         return count("plant.id", plantId);
     }

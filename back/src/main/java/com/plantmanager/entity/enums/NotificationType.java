@@ -8,5 +8,6 @@ public enum NotificationType {
     WATERING_REMINDER,
     CARE_REMINDER,
     PLANT_ADDED,
-    MEMBER_JOINED
+    MEMBER_JOINED,
+    HOUSE_INVITATION
 }

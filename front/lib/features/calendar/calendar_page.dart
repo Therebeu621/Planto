@@ -142,9 +142,10 @@ class _CalendarPageState extends State<CalendarPage> {
       }
     } catch (e) {
       if (mounted) {
+        final message = e.toString().replaceFirst('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: $e'),
+            content: Text(message),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -187,19 +188,21 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   Widget _buildErrorState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
-          const SizedBox(height: 16),
-          Text('Erreur: $_error'),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _loadData,
-            child: const Text('Reessayer'),
-          ),
-        ],
+    return SingleChildScrollView(
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
+            const SizedBox(height: 16),
+            Text('Erreur: $_error'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadData,
+              child: const Text('Reessayer'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -332,16 +335,18 @@ class _CalendarPageState extends State<CalendarPage> {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                isToday
-                    ? 'Aujourd\'hui'
-                    : isPast
-                        ? 'En retard'
-                        : _formatDate(_selectedDay),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isPast ? AppTheme.errorColor : AppTheme.textPrimaryC(context),
-                    ),
+              Flexible(
+                child: Text(
+                  isToday
+                      ? 'Aujourd\'hui'
+                      : isPast
+                          ? 'En retard'
+                          : _formatDate(_selectedDay),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isPast ? AppTheme.errorColor : AppTheme.textPrimaryC(context),
+                      ),
+                ),
               ),
               const Spacer(),
               Container(
@@ -433,17 +438,19 @@ class _CalendarPageState extends State<CalendarPage> {
                 child: Icon(Icons.priority_high, color: AppTheme.errorColor, size: 20),
               ),
               const SizedBox(width: 12),
-              Text(
-                'A arroser maintenant',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+              Flexible(
+                child: Text(
+                  'A arroser maintenant',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: AppConstants.paddingM),
           SizedBox(
-            height: 150,
+            height: MediaQuery.of(context).size.height * 0.2,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: todayPlants.length,
@@ -460,7 +467,7 @@ class _CalendarPageState extends State<CalendarPage> {
 
   Widget _buildUrgentPlantCard(PlantSummary plant) {
     return Container(
-      width: 140,
+      width: MediaQuery.of(context).size.width * 0.35,
       margin: const EdgeInsets.only(right: AppConstants.paddingM),
       child: Card(
         color: AppTheme.errorColor.withOpacity(0.05),
@@ -570,11 +577,13 @@ class _CalendarPageState extends State<CalendarPage> {
                 child: Icon(Icons.calendar_month, color: AppTheme.primaryColor, size: 20),
               ),
               const SizedBox(width: 12),
-              Text(
-                'Prochains 7 jours',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+              Flexible(
+                child: Text(
+                  'Prochains 7 jours',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
               ),
             ],
           ),

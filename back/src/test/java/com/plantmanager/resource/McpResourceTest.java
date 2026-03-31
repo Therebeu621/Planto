@@ -3,6 +3,7 @@ package com.plantmanager.resource;
 import com.plantmanager.TestUtils;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +18,9 @@ import static org.hamcrest.Matchers.*;
 public class McpResourceTest {
 
     private String accessToken;
-    private static final String MCP_API_KEY = "test-mcp-key";
+
+    @ConfigProperty(name = "mcp.api.key")
+    String mcpApiKey;
 
     @BeforeEach
     void setUp() {
@@ -298,7 +301,7 @@ public class McpResourceTest {
     @Test
     void testExecuteTool_withApiKey_shouldReturn200() {
         given()
-                .header("X-MCP-API-Key", MCP_API_KEY)
+                .header("X-MCP-API-Key", mcpApiKey)
                 .contentType(ContentType.JSON)
                 .body("""
                         {
@@ -316,7 +319,7 @@ public class McpResourceTest {
     @Test
     void testGetSchema_withApiKey_shouldReturn200_v2() {
         given()
-                .header("X-MCP-API-Key", MCP_API_KEY)
+                .header("X-MCP-API-Key", mcpApiKey)
                 .when()
                 .get("/mcp/schema")
                 .then()
@@ -329,7 +332,7 @@ public class McpResourceTest {
         // Both JWT and API key provided - JWT should take precedence
         given()
                 .header("Authorization", TestUtils.authHeader(accessToken))
-                .header("X-MCP-API-Key", MCP_API_KEY)
+                .header("X-MCP-API-Key", mcpApiKey)
                 .contentType(ContentType.JSON)
                 .body("""
                         {

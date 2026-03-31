@@ -5,10 +5,12 @@ import com.plantmanager.dto.SpeciesDetailDTO;
 import com.plantmanager.dto.SpeciesResponseDTO;
 import com.plantmanager.dto.trefle.TrefleDetailResponse;
 import com.plantmanager.dto.trefle.TrefleSearchResponse;
+import io.quarkus.arc.Arc;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -28,6 +30,11 @@ public class TrefleServiceTest {
     @InjectMock
     @RestClient
     TrefleApiClient trefleApiClient;
+
+    @BeforeEach
+    void setUp() {
+        Arc.container().instance(TrefleService.class).get().trefleToken = Optional.of("test-token");
+    }
 
     // ===== searchSpecies tests =====
 

@@ -2,9 +2,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planto/core/models/room.dart';
 import 'package:planto/core/services/room_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../test_helpers.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late MockDioInterceptor mockInterceptor;
   late Dio dio;
   late RoomService service;
@@ -18,6 +21,7 @@ void main() {
   };
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     mockInterceptor = MockDioInterceptor();
     dio = createMockDio(mockInterceptor);
     service = RoomService(dio: dio);
@@ -38,22 +42,36 @@ void main() {
     });
 
     test('401 error throws session expired', () async {
-      mockInterceptor.addMockResponse('/api/v1/rooms',
-          isError: true, errorStatusCode: 401);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        isError: true,
+        errorStatusCode: 401,
+      );
       expect(
         () => service.getRooms(),
-        throwsA(predicate((e) =>
-            e is Exception && e.toString().contains('Session expir'))),
+        throwsA(
+          predicate(
+            (e) => e is Exception && e.toString().contains('Session expir'),
+          ),
+        ),
       );
     });
 
     test('DioException throws network error', () async {
-      mockInterceptor.addMockResponse('/api/v1/rooms',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(
         () => service.getRooms(),
-        throwsA(predicate(
-            (e) => e is Exception && e.toString().contains('Erreur'))),
+        throwsA(
+          predicate(
+            (e) =>
+                e is Exception &&
+                e.toString().contains('Impossible de charger les pieces'),
+          ),
+        ),
       );
     });
   });
@@ -67,30 +85,47 @@ void main() {
     });
 
     test('404 error throws room not found', () async {
-      mockInterceptor.addMockResponse('/api/v1/rooms/r1',
-          isError: true, errorStatusCode: 404);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms/r1',
+        isError: true,
+        errorStatusCode: 404,
+      );
       expect(
         () => service.getRoomById('r1'),
-        throwsA(predicate((e) =>
-            e is Exception && e.toString().contains('non trouv'))),
+        throwsA(
+          predicate(
+            (e) => e is Exception && e.toString().contains('non trouv'),
+          ),
+        ),
       );
     });
 
     test('generic error throws network error', () async {
-      mockInterceptor.addMockResponse('/api/v1/rooms/r1',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms/r1',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(
         () => service.getRoomById('r1'),
-        throwsA(predicate(
-            (e) => e is Exception && e.toString().contains('Erreur'))),
+        throwsA(
+          predicate(
+            (e) =>
+                e is Exception &&
+                e.toString().contains('Impossible de charger la piece'),
+          ),
+        ),
       );
     });
   });
 
   group('createRoom', () {
     test('success returns room', () async {
-      mockInterceptor.addMockResponse('/api/v1/rooms',
-          data: roomJson, statusCode: 201);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: roomJson,
+        statusCode: 201,
+      );
       final result = await service.createRoom('Salon', 'LIVING_ROOM');
       expect(result.id, 'r1');
       final request = mockInterceptor.capturedRequests.last;
@@ -99,10 +134,31 @@ void main() {
     });
 
     test('error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/rooms',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        isError: true,
+        errorStatusCode: 500,
+      );
+      expect(() => service.createRoom('Salon', 'LIVING_ROOM'), throwsException);
+    });
+
+    test('400 error returns API validation message', () async {
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        isError: true,
+        errorStatusCode: 400,
+        data: {'message': 'Le nom de la piece est requis'},
+      );
       expect(
-          () => service.createRoom('Salon', 'LIVING_ROOM'), throwsException);
+        () => service.createRoom('', 'LIVING_ROOM'),
+        throwsA(
+          predicate(
+            (e) =>
+                e is Exception &&
+                e.toString().contains('Le nom de la piece est requis'),
+          ),
+        ),
+      );
     });
   });
 
@@ -110,33 +166,53 @@ void main() {
     test('success completes', () async {
       mockInterceptor.addMockResponse('/api/v1/rooms/r1');
       await service.deleteRoom('r1');
-      expect(mockInterceptor.capturedRequests.last.path,
-          contains('/api/v1/rooms/r1'));
+      expect(
+        mockInterceptor.capturedRequests.last.path,
+        contains('/api/v1/rooms/r1'),
+      );
     });
 
-    test('400 error throws room not empty', () async {
-      mockInterceptor.addMockResponse('/api/v1/rooms/r1',
-          isError: true, errorStatusCode: 400);
+    test('400 error returns API message', () async {
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms/r1',
+        isError: true,
+        errorStatusCode: 400,
+        data: {'message': 'Impossible de supprimer la piece'},
+      );
       expect(
         () => service.deleteRoom('r1'),
-        throwsA(predicate((e) =>
-            e is Exception && e.toString().contains('plantes'))),
+        throwsA(
+          predicate(
+            (e) =>
+                e is Exception &&
+                e.toString().contains('Impossible de supprimer la piece'),
+          ),
+        ),
       );
     });
 
     test('404 error throws room not found', () async {
-      mockInterceptor.addMockResponse('/api/v1/rooms/r1',
-          isError: true, errorStatusCode: 404);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms/r1',
+        isError: true,
+        errorStatusCode: 404,
+      );
       expect(
         () => service.deleteRoom('r1'),
-        throwsA(predicate((e) =>
-            e is Exception && e.toString().contains('non trouvee'))),
+        throwsA(
+          predicate(
+            (e) => e is Exception && e.toString().contains('non trouvee'),
+          ),
+        ),
       );
     });
 
     test('generic error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/rooms/r1',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms/r1',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(() => service.deleteRoom('r1'), throwsException);
     });
   });
@@ -145,20 +221,29 @@ void main() {
 
   group('non-200 status branches', () {
     test('getRooms non-200 throws', () async {
-      mockInterceptor.addMockResponse('/api/v1/rooms',
-          data: [], statusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: [],
+        statusCode: 500,
+      );
       expect(() => service.getRooms(), throwsException);
     });
 
     test('getRoomById non-200 throws', () async {
-      mockInterceptor.addMockResponse('/api/v1/rooms/r1',
-          data: {}, statusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms/r1',
+        data: {},
+        statusCode: 500,
+      );
       expect(() => service.getRoomById('r1'), throwsException);
     });
 
     test('createRoom non-201 throws', () async {
-      mockInterceptor.addMockResponse('/api/v1/rooms',
-          data: {}, statusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: {},
+        statusCode: 500,
+      );
       expect(() => service.createRoom('Test', 'BEDROOM'), throwsException);
     });
   });

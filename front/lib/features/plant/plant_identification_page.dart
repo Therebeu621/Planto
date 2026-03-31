@@ -10,20 +10,28 @@ import 'package:planto/features/plant/add_plant_page.dart';
 class PlantIdentificationPage extends StatefulWidget {
   final Uint8List imageBytes;
   final GeminiService? geminiService;
+  final Widget Function(
+    PlantIdentificationResult? aiData,
+    Uint8List imageBytes,
+  )?
+  addPlantPageBuilder;
 
   const PlantIdentificationPage({
     super.key,
     required this.imageBytes,
     this.geminiService,
+    this.addPlantPageBuilder,
   });
 
   @override
-  State<PlantIdentificationPage> createState() => _PlantIdentificationPageState();
+  State<PlantIdentificationPage> createState() =>
+      _PlantIdentificationPageState();
 }
 
 class _PlantIdentificationPageState extends State<PlantIdentificationPage>
     with SingleTickerProviderStateMixin {
-  late final GeminiService _geminiService = widget.geminiService ?? GeminiService();
+  late final GeminiService _geminiService =
+      widget.geminiService ?? GeminiService();
   late AnimationController _animationController;
   late Animation<double> _pulseAnimation;
 
@@ -79,10 +87,9 @@ class _PlantIdentificationPageState extends State<PlantIdentificationPage>
         // Naviguer vers AddPlantPage et propager le resultat
         final addResult = await Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => AddPlantPage(
-              aiData: result,
-              aiPhoto: widget.imageBytes,
-            ),
+            builder: (_) =>
+                widget.addPlantPageBuilder?.call(result, widget.imageBytes) ??
+                AddPlantPage(aiData: result, aiPhoto: widget.imageBytes),
           ),
         );
         // Propager le resultat a HomePage
@@ -109,12 +116,15 @@ class _PlantIdentificationPageState extends State<PlantIdentificationPage>
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
+        scrollable: true,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(Icons.error_outline, color: Colors.orange.shade700),
             const SizedBox(width: 12),
-            const Text('Identification impossible'),
+            const Expanded(child: Text('Identification impossible')),
           ],
         ),
         content: Text(
@@ -135,7 +145,12 @@ class _PlantIdentificationPageState extends State<PlantIdentificationPage>
               // Aller vers le formulaire avec la photo
               final addResult = await Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => AddPlantPage(aiPhoto: widget.imageBytes),
+                  builder: (_) =>
+                      widget.addPlantPageBuilder?.call(
+                        null,
+                        widget.imageBytes,
+                      ) ??
+                      AddPlantPage(aiPhoto: widget.imageBytes),
                 ),
               );
               // Propager le resultat a HomePage
@@ -188,7 +203,7 @@ class _PlantIdentificationPageState extends State<PlantIdentificationPage>
 
             // Contenu principal
             Expanded(
-              child: Padding(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.all(32),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -196,25 +211,33 @@ class _PlantIdentificationPageState extends State<PlantIdentificationPage>
                     // Image avec animation
                     ScaleTransition(
                       scale: _pulseAnimation,
-                      child: Container(
-                        width: 180,
-                        height: 180,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.primaryColor.withOpacity(0.3),
-                              blurRadius: 30,
-                              spreadRadius: 5,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final imageSize = (constraints.maxWidth * 0.5).clamp(
+                            120.0,
+                            180.0,
+                          );
+                          return Container(
+                            width: imageSize,
+                            height: imageSize,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppTheme.primaryColor.withOpacity(0.3),
+                                  blurRadius: 30,
+                                  spreadRadius: 5,
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: Image.memory(
-                            widget.imageBytes,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
+                            child: ClipOval(
+                              child: Image.memory(
+                                widget.imageBytes,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
 
@@ -245,7 +268,9 @@ class _PlantIdentificationPageState extends State<PlantIdentificationPage>
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: _isAnalyzing ? AppTheme.textGreyDark(context) : AppTheme.primaryColor,
+                        color: _isAnalyzing
+                            ? AppTheme.textGreyDark(context)
+                            : AppTheme.primaryColor,
                       ),
                     ),
 

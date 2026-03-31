@@ -43,9 +43,11 @@ public class PlantPhotoResource {
     }
 
     @GET
+    @Transactional
     @Operation(summary = "Galerie photos", description = "Toutes les photos d'une plante")
     public Response getPhotos(@PathParam("plantId") UUID plantId) {
-        plantService.getPlantById(getCurrentUserId(), plantId);
+        UserPlantEntity plant = plantService.getPlantByIdReadOnly(getCurrentUserId(), plantId);
+        ensurePrimaryPhotoInGallery(plant);
         List<PlantPhotoDTO> photos = PlantPhotoEntity.findByPlant(plantId)
                 .stream().map(PlantPhotoDTO::from).toList();
         return Response.ok(photos).build();
@@ -64,7 +66,7 @@ public class PlantPhotoResource {
 
         if (file == null || file.uploadedFile() == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(new PlantResource.ErrorResponse("Fichier requis")).build();
+                    .entity(new com.plantmanager.dto.ErrorResponse("Fichier requis")).build();
         }
 
         try (FileInputStream fis = new FileInputStream(file.uploadedFile().toFile())) {
@@ -105,13 +107,13 @@ public class PlantPhotoResource {
 
         } catch (NotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND)
-                    .entity(new PlantResource.ErrorResponse(e.getMessage())).build();
+                    .entity(new com.plantmanager.dto.ErrorResponse(e.getMessage())).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(new PlantResource.ErrorResponse(e.getMessage())).build();
+                    .entity(new com.plantmanager.dto.ErrorResponse(e.getMessage())).build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(new PlantResource.ErrorResponse("Erreur upload: " + e.getMessage())).build();
+                    .entity(new com.plantmanager.dto.ErrorResponse("Erreur upload: " + e.getMessage())).build();
         }
     }
 
@@ -176,5 +178,31 @@ public class PlantPhotoResource {
         }
 
         return Response.noContent().build();
+    }
+
+    private void ensurePrimaryPhotoInGallery(UserPlantEntity plant) {
+        if (plant.photoPath == null || plant.photoPath.isBlank()) {
+            return;
+        }
+
+        PlantPhotoEntity primaryPhoto = PlantPhotoEntity.findPrimary(plant.id);
+        if (primaryPhoto != null) {
+            return;
+        }
+
+        PlantPhotoEntity existingPhoto = PlantPhotoEntity.findByPlantAndPath(
+                plant.id,
+                plant.photoPath);
+        if (existingPhoto != null) {
+            existingPhoto.isPrimary = true;
+            return;
+        }
+
+        PlantPhotoEntity legacyPhoto = new PlantPhotoEntity();
+        legacyPhoto.plant = plant;
+        legacyPhoto.uploadedBy = plant.user;
+        legacyPhoto.photoPath = plant.photoPath;
+        legacyPhoto.isPrimary = true;
+        legacyPhoto.persist();
     }
 }

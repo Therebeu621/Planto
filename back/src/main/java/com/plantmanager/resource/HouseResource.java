@@ -1,6 +1,7 @@
 package com.plantmanager.resource;
 
 import com.plantmanager.dto.CreateHouseDTO;
+import com.plantmanager.dto.HouseInvitationDTO;
 import com.plantmanager.dto.HouseMemberDTO;
 import com.plantmanager.dto.HouseResponseDTO;
 import com.plantmanager.dto.JoinHouseDTO;
@@ -107,19 +108,75 @@ public class HouseResource {
         return Response.status(Response.Status.CREATED).entity(house).build();
     }
 
-    // ==================== JOIN HOUSE ====================
+    // ==================== JOIN HOUSE (demande d'adhésion) ====================
 
     @POST
     @Path("/join")
-    @Operation(summary = "Rejoindre une maison", description = "Rejoindre une maison existante via code d'invitation")
+    @Operation(summary = "Demander a rejoindre une maison", description = "Envoie une demande d'adhesion via code d'invitation. Le proprietaire doit accepter.")
     @APIResponses({
-            @APIResponse(responseCode = "200", description = "Maison rejointe", content = @Content(schema = @Schema(implementation = HouseResponseDTO.class))),
-            @APIResponse(responseCode = "400", description = "Déjà membre ou code invalide"),
+            @APIResponse(responseCode = "201", description = "Demande envoyee", content = @Content(schema = @Schema(implementation = HouseInvitationDTO.class))),
+            @APIResponse(responseCode = "400", description = "Deja membre ou demande en attente"),
             @APIResponse(responseCode = "404", description = "Code d'invitation invalide")
     })
     public Response joinHouse(@Valid JoinHouseDTO request) {
-        HouseResponseDTO house = houseService.joinHouse(getCurrentUserId(), request);
-        return Response.ok(house).build();
+        HouseInvitationDTO invitation = houseService.requestJoinHouse(getCurrentUserId(), request);
+        return Response.status(Response.Status.CREATED).entity(invitation).build();
+    }
+
+    // ==================== INVITATIONS ====================
+
+    @PUT
+    @Path("/invitations/{invitationId}/accept")
+    @Operation(summary = "Accepter une demande", description = "Accepter la demande d'adhesion d'un utilisateur (Owner uniquement)")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "Demande acceptee", content = @Content(schema = @Schema(implementation = HouseInvitationDTO.class))),
+            @APIResponse(responseCode = "400", description = "Demande deja traitee"),
+            @APIResponse(responseCode = "403", description = "Non autorise (pas owner)"),
+            @APIResponse(responseCode = "404", description = "Demande introuvable")
+    })
+    public Response acceptInvitation(
+            @Parameter(description = "ID de la demande", required = true) @PathParam("invitationId") UUID invitationId) {
+        HouseInvitationDTO result = houseService.acceptInvitation(getCurrentUserId(), invitationId);
+        return Response.ok(result).build();
+    }
+
+    @PUT
+    @Path("/invitations/{invitationId}/decline")
+    @Operation(summary = "Refuser une demande", description = "Refuser la demande d'adhesion d'un utilisateur (Owner uniquement)")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "Demande refusee", content = @Content(schema = @Schema(implementation = HouseInvitationDTO.class))),
+            @APIResponse(responseCode = "400", description = "Demande deja traitee"),
+            @APIResponse(responseCode = "403", description = "Non autorise (pas owner)"),
+            @APIResponse(responseCode = "404", description = "Demande introuvable")
+    })
+    public Response declineInvitation(
+            @Parameter(description = "ID de la demande", required = true) @PathParam("invitationId") UUID invitationId) {
+        HouseInvitationDTO result = houseService.declineInvitation(getCurrentUserId(), invitationId);
+        return Response.ok(result).build();
+    }
+
+    @GET
+    @Path("/{id}/invitations")
+    @Operation(summary = "Demandes en attente", description = "Liste les demandes d'adhesion en attente pour une maison (Owner uniquement)")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "Liste des demandes", content = @Content(schema = @Schema(implementation = HouseInvitationDTO[].class))),
+            @APIResponse(responseCode = "403", description = "Non autorise (pas owner)")
+    })
+    public Response getPendingInvitations(
+            @Parameter(description = "ID de la maison", required = true) @PathParam("id") UUID id) {
+        List<HouseInvitationDTO> invitations = houseService.getPendingInvitations(getCurrentUserId(), id);
+        return Response.ok(invitations).build();
+    }
+
+    @GET
+    @Path("/my-requests")
+    @Operation(summary = "Mes demandes en attente", description = "Liste mes demandes d'adhesion en attente")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "Liste de mes demandes", content = @Content(schema = @Schema(implementation = HouseInvitationDTO[].class)))
+    })
+    public Response getMyPendingRequests() {
+        List<HouseInvitationDTO> requests = houseService.getMyPendingRequests(getCurrentUserId());
+        return Response.ok(requests).build();
     }
 
     // ==================== SWITCH ACTIVE HOUSE ====================

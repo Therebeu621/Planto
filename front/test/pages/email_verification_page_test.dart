@@ -30,13 +30,13 @@ void main() {
 
   Widget buildTestWidget({
     String email = 'test@test.com',
-    VoidCallback? onVerified,
+    void Function(BuildContext)? onVerified,
     ProfileService? service,
   }) {
     return MaterialApp(
       home: EmailVerificationPage(
         email: email,
-        onVerified: onVerified ?? () {},
+        onVerified: onVerified ?? (_) {},
         profileService: service ?? profileService,
       ),
     );
@@ -156,7 +156,7 @@ void main() {
       });
 
       await tester.pumpWidget(buildTestWidget(
-        onVerified: () => verified = true,
+        onVerified: (_) => verified = true,
       ));
       await tester.pump();
 
@@ -272,7 +272,7 @@ void main() {
       bool verified = false;
 
       await tester.pumpWidget(buildTestWidget(
-        onVerified: () => verified = true,
+        onVerified: (_) => verified = true,
       ));
       await tester.pump();
 

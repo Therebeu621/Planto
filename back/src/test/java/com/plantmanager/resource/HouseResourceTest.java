@@ -67,6 +67,23 @@ public class HouseResourceTest {
     }
 
     @Test
+    void testCreateHouse_blankName_shouldReturn400WithCleanMessage() {
+        given()
+                .header("Authorization", TestUtils.authHeader(accessToken))
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                            "name": ""
+                        }
+                        """)
+                .when()
+                .post("/houses")
+                .then()
+                .statusCode(400)
+                .body("message", equalTo("Le nom de la maison est requis"));
+    }
+
+    @Test
     void testSwitchActiveHouse_shouldUpdateContext() {
         // 1. Create a new house
         String newHouseId = given()
@@ -104,10 +121,35 @@ public class HouseResourceTest {
                 .body("id", equalTo(newHouseId));
     }
 
+    /** Helper: test2 sends join request, owner accepts it. */
+    private void joinAndAccept(String ownerToken, String test2Token, String inviteCode) {
+        String invitationId = given()
+                .header("Authorization", TestUtils.authHeader(test2Token))
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                            "inviteCode": "%s"
+                        }
+                        """.formatted(inviteCode))
+                .when()
+                .post("/houses/join")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+
+        given()
+                .header("Authorization", TestUtils.authHeader(ownerToken))
+                .when()
+                .put("/houses/invitations/" + invitationId + "/accept")
+                .then()
+                .statusCode(200);
+    }
+
     @Test
     void testJoinHouse_validCode_shouldJoin() {
         // 1. Create a house as Demo User
-        String inviteCode = given()
+        String houseId = given()
                 .header("Authorization", TestUtils.authHeader(accessToken))
                 .contentType(ContentType.JSON)
                 .body("""
@@ -120,26 +162,30 @@ public class HouseResourceTest {
                 .then()
                 .statusCode(201)
                 .extract()
+                .path("id");
+
+        String inviteCode = given()
+                .header("Authorization", TestUtils.authHeader(accessToken))
+                .when()
+                .get("/houses/" + houseId)
+                .then()
+                .extract()
                 .path("inviteCode");
 
         // 2. Login as Test2 User
         String test2Token = TestUtils.loginAsTest2();
 
-        // 3. Join the house as Test2
+        // 3. Join + accept
+        joinAndAccept(accessToken, test2Token, inviteCode);
+
+        // 4. Verify test2 is now a MEMBER
         given()
-                .header("Authorization", TestUtils.authHeader(test2Token))
-                .contentType(ContentType.JSON)
-                .body("""
-                        {
-                            "inviteCode": "%s"
-                        }
-                        """.formatted(inviteCode))
+                .header("Authorization", TestUtils.authHeader(accessToken))
                 .when()
-                .post("/houses/join")
+                .get("/houses/" + houseId + "/members")
                 .then()
                 .statusCode(200)
-                .body("name", equalTo("Joinable House"))
-                .body("role", equalTo("MEMBER"));
+                .body("find { it.role == 'MEMBER' }.role", equalTo("MEMBER"));
     }
 
     @Test
@@ -171,18 +217,7 @@ public class HouseResourceTest {
 
         // 2. Add Test2 as member
         String test2Token = TestUtils.loginAsTest2();
-        given()
-                .header("Authorization", TestUtils.authHeader(test2Token))
-                .contentType(ContentType.JSON)
-                .body("""
-                        {
-                            "inviteCode": "%s"
-                        }
-                        """.formatted(inviteCode))
-                .when()
-                .post("/houses/join")
-                .then()
-                .statusCode(200);
+        joinAndAccept(accessToken, test2Token, inviteCode);
 
         // 3. Get members list (as Owner)
         String test2UserId = given()
@@ -249,18 +284,7 @@ public class HouseResourceTest {
         String test2Token = TestUtils.loginAsTest2();
         
         // Need to join successfully first
-        given()
-                .header("Authorization", TestUtils.authHeader(test2Token))
-                .contentType(ContentType.JSON)
-                .body("""
-                        {
-                            "inviteCode": "%s"
-                        }
-                        """.formatted(inviteCode))
-                .when()
-                .post("/houses/join")
-                .then()
-                .statusCode(200);
+        joinAndAccept(accessToken, test2Token, inviteCode);
 
         // 3. Leave house as Test2
         given()
@@ -349,18 +373,7 @@ public class HouseResourceTest {
                 .path("inviteCode");
 
         String test2Token = TestUtils.loginAsTest2();
-        given()
-                .header("Authorization", TestUtils.authHeader(test2Token))
-                .contentType(ContentType.JSON)
-                .body("""
-                        {
-                            "inviteCode": "%s"
-                        }
-                        """.formatted(inviteCode))
-                .when()
-                .post("/houses/join")
-                .then()
-                .statusCode(200);
+        joinAndAccept(accessToken, test2Token, inviteCode);
 
         String test2UserId = given()
                 .header("Authorization", TestUtils.authHeader(accessToken))
@@ -414,18 +427,7 @@ public class HouseResourceTest {
                 .path("inviteCode");
 
         String test2Token = TestUtils.loginAsTest2();
-        given()
-                .header("Authorization", TestUtils.authHeader(test2Token))
-                .contentType(ContentType.JSON)
-                .body("""
-                        {
-                            "inviteCode": "%s"
-                        }
-                        """.formatted(inviteCode))
-                .when()
-                .post("/houses/join")
-                .then()
-                .statusCode(200);
+        joinAndAccept(accessToken, test2Token, inviteCode);
 
         String test2UserId = given()
                 .header("Authorization", TestUtils.authHeader(accessToken))
@@ -477,18 +479,7 @@ public class HouseResourceTest {
                 .path("inviteCode");
 
         String test2Token = TestUtils.loginAsTest2();
-        given()
-                .header("Authorization", TestUtils.authHeader(test2Token))
-                .contentType(ContentType.JSON)
-                .body("""
-                        {
-                            "inviteCode": "%s"
-                        }
-                        """.formatted(inviteCode))
-                .when()
-                .post("/houses/join")
-                .then()
-                .statusCode(200);
+        joinAndAccept(accessToken, test2Token, inviteCode);
 
         String ownerUserId = given()
                 .header("Authorization", TestUtils.authHeader(accessToken))
@@ -540,18 +531,7 @@ public class HouseResourceTest {
                 .path("inviteCode");
 
         String test2Token = TestUtils.loginAsTest2();
-        given()
-                .header("Authorization", TestUtils.authHeader(test2Token))
-                .contentType(ContentType.JSON)
-                .body("""
-                        {
-                            "inviteCode": "%s"
-                        }
-                        """.formatted(inviteCode))
-                .when()
-                .post("/houses/join")
-                .then()
-                .statusCode(200);
+        joinAndAccept(accessToken, test2Token, inviteCode);
 
         given()
                 .header("Authorization", TestUtils.authHeader(test2Token))

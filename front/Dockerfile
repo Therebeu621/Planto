@@ -32,14 +32,20 @@ RUN flutter pub get
 # Copy the rest of the app
 COPY . .
 
-# Build for web
-RUN flutter build web --release
+# Build for web (API_BASE_URL can be overridden at build time)
+ARG API_BASE_URL=""
+RUN if [ -n "$API_BASE_URL" ]; then \
+      flutter build web --release --dart-define=API_BASE_URL=$API_BASE_URL; \
+    else \
+      flutter build web --release; \
+    fi
 
 # Production stage - lightweight nginx server
 FROM nginx:alpine
 
-# Copy built web app
+# Copy built web app and disable service worker caching
 COPY --from=build /app/build/web /usr/share/nginx/html
+RUN rm -f /usr/share/nginx/html/flutter_service_worker.js
 
 # Copy nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf

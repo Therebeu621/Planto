@@ -625,7 +625,7 @@ public class AuthResourceTest {
     }
 
     @Test
-    void testChangePassword_wrongCurrentPassword_shouldReturn401() {
+    void testChangePassword_wrongCurrentPassword_shouldReturn400() {
         String token = TestUtils.loginAsDemo();
 
         given()
@@ -640,7 +640,7 @@ public class AuthResourceTest {
                 .when()
                 .put("/auth/me/password")
                 .then()
-                .statusCode(401)
+                .statusCode(400)
                 .body("message", containsStringIgnoringCase("incorrect"));
     }
 

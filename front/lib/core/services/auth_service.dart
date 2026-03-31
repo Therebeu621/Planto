@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:planto/core/constants/app_constants.dart';
 import 'package:planto/core/services/api_client.dart';
+import 'package:planto/core/services/cache_service.dart';
 import 'package:planto/core/services/fcm_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -33,7 +34,7 @@ class AuthService {
       // serverClientId is not supported on Web platform
       serverClientId: kIsWeb
           ? null
-          : '767283060164-d7k6anlmagdgf67gq0mi35r2e6ga8e5v.apps.googleusercontent.com',
+          : '1035158356455-ve6poq16eh2rc7meblh69or7b7jc4mm2.apps.googleusercontent.com',
     );
   }
 
@@ -71,7 +72,10 @@ class AuthService {
       if (e.response?.statusCode == 401) {
         throw Exception('Email ou mot de passe incorrect');
       }
-      throw Exception('Erreur de connexion: ${e.message}');
+      if (e.response?.statusCode == 400) {
+        throw Exception('Veuillez entrer une adresse email valide');
+      }
+      throw Exception('Erreur de connexion. Verifiez votre connexion internet.');
     }
   }
 
@@ -242,6 +246,7 @@ class AuthService {
     }
 
     await ApiClient.clearTokens();
+    await CacheService.instance.clearAll();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userEmailKey);
   }

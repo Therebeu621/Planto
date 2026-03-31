@@ -16,6 +16,9 @@ public record NotificationDTO(
         boolean read,
         UUID plantId,
         String plantNickname,
+        UUID invitationId,
+        UUID houseId,
+        String houseName,
         OffsetDateTime createdAt) {
 
     public static NotificationDTO from(NotificationEntity entity) {
@@ -26,6 +29,9 @@ public record NotificationDTO(
                 entity.read != null && entity.read,
                 entity.plant != null ? entity.plant.id : null,
                 entity.plant != null ? entity.plant.nickname : null,
+                entity.invitation != null ? entity.invitation.id : null,
+                entity.house != null ? entity.house.id : null,
+                entity.house != null ? entity.house.name : null,
                 entity.createdAt);
     }
 }

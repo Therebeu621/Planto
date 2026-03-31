@@ -1,7 +1,7 @@
 package com.plantmanager.service;
 
 import io.quarkus.mailer.Mail;
-import io.quarkus.mailer.Mailer;
+import io.quarkus.mailer.reactive.ReactiveMailer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
@@ -12,7 +12,7 @@ public class EmailService {
     private static final Logger LOG = Logger.getLogger(EmailService.class);
 
     @Inject
-    Mailer mailer;
+    ReactiveMailer mailer;
 
     public void sendPasswordResetEmail(String to, String resetCode) {
         String subject = "Planto - Reinitialisation de votre mot de passe";
@@ -36,12 +36,10 @@ public class EmailService {
                 </html>
                 """.formatted(resetCode);
 
-        try {
-            mailer.send(Mail.withHtml(to, subject, body));
-            LOG.infof("Password reset email sent to %s", to);
-        } catch (Exception e) {
-            LOG.errorf("Failed to send password reset email to %s: %s", to, e.getMessage());
-        }
+        mailer.send(Mail.withHtml(to, subject, body))
+                .subscribe().with(
+                        unused -> LOG.infof("Password reset email sent to %s", to),
+                        failure -> LOG.errorf("Failed to send password reset email to %s: %s", to, failure.getMessage()));
     }
 
     public void sendEmailVerificationCode(String to, String code) {
@@ -64,11 +62,9 @@ public class EmailService {
                 </html>
                 """.formatted(code);
 
-        try {
-            mailer.send(Mail.withHtml(to, subject, body));
-            LOG.infof("Verification email sent to %s", to);
-        } catch (Exception e) {
-            LOG.errorf("Failed to send verification email to %s: %s", to, e.getMessage());
-        }
+        mailer.send(Mail.withHtml(to, subject, body))
+                .subscribe().with(
+                        unused -> LOG.infof("Verification email sent to %s", to),
+                        failure -> LOG.errorf("Failed to send verification email to %s: %s", to, failure.getMessage()));
     }
 }

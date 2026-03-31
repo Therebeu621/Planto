@@ -1,6 +1,7 @@
 package com.plantmanager.service;
 
 import com.plantmanager.dto.CareRecommendationDTO;
+import com.plantmanager.dto.HouseResponseDTO;
 import com.plantmanager.dto.McpSchemaResponse;
 import com.plantmanager.dto.McpSchemaResponse.ParameterSchema;
 import com.plantmanager.dto.McpSchemaResponse.ToolSchema;
@@ -38,6 +39,9 @@ public class McpService {
     @Inject
     WeatherService weatherService;
 
+    @Inject
+    HouseService houseService;
+
     /**
      * Execute an MCP tool by name with the given parameters.
      *
@@ -55,6 +59,9 @@ public class McpService {
                 request.tool(), userId, request.params());
 
         return switch (request.tool()) {
+            case "list_houses" -> listHouses(userId);
+            case "get_active_house" -> getActiveHouse(userId);
+            case "switch_active_house" -> switchActiveHouse(userId, request);
             case "list_plants" -> listPlants(userId);
             case "search_plants" -> searchPlants(request);
             case "add_plant" -> addPlant(userId, request);
@@ -72,8 +79,81 @@ public class McpService {
             case "get_weather_watering_advice" -> getWeatherWateringAdvice(request);
             case "enrich_plant_caresheet" -> enrichPlantCareSheet(request);
             default -> McpToolResponse.error("Unknown tool: " + request.tool()
-                    + ". Available tools: list_plants, search_plants, add_plant, water_plant, water_all_plants, list_rooms, create_room, move_plant, delete_plant, get_plant_detail, list_plants_needing_water, get_care_recommendation, update_plant, delete_room, get_weather_watering_advice, enrich_plant_caresheet");
+                    + ". Available tools: list_houses, get_active_house, switch_active_house, list_plants, search_plants, add_plant, water_plant, water_all_plants, list_rooms, create_room, move_plant, delete_plant, get_plant_detail, list_plants_needing_water, get_care_recommendation, update_plant, delete_room, get_weather_watering_advice, enrich_plant_caresheet");
         };
+    }
+
+    /**
+     * List all houses for the user.
+     */
+    private McpToolResponse listHouses(UUID userId) {
+        List<HouseResponseDTO> houses = houseService.getUserHouses(userId);
+
+        if (houses.isEmpty()) {
+            return McpToolResponse.success("Vous n'avez aucune maison pour le moment.", List.of());
+        }
+
+        List<Map<String, Object>> data = houses.stream().map(this::houseToMap).toList();
+        return McpToolResponse.success(
+                String.format("Vous avez %d maison(s).", houses.size()),
+                data
+        );
+    }
+
+    /**
+     * Get the currently active house for the user.
+     */
+    private McpToolResponse getActiveHouse(UUID userId) {
+        try {
+            HouseResponseDTO house = houseService.getActiveHouse(userId);
+            return McpToolResponse.success(
+                    String.format("Votre maison active est '%s'.", house.name()),
+                    houseToMap(house)
+            );
+        } catch (Exception e) {
+            return McpToolResponse.error("Aucune maison active trouvee.");
+        }
+    }
+
+    /**
+     * Switch the user's active house by name or ID.
+     */
+    private McpToolResponse switchActiveHouse(UUID userId, McpToolRequest request) {
+        String houseIdParam = request.param("houseId");
+        String houseName = request.param("houseName");
+
+        if ((houseIdParam == null || houseIdParam.isBlank()) &&
+                (houseName == null || houseName.isBlank())) {
+            return McpToolResponse.error("Parameter 'houseId' or 'houseName' is required.");
+        }
+
+        try {
+            HouseResponseDTO targetHouse;
+            if (houseIdParam != null && !houseIdParam.isBlank()) {
+                targetHouse = houseService.switchActiveHouse(userId, UUID.fromString(houseIdParam));
+            } else {
+                List<HouseResponseDTO> houses = houseService.getUserHouses(userId);
+                HouseResponseDTO matchingHouse = houses.stream()
+                        .filter(h -> h.name().equalsIgnoreCase(houseName))
+                        .findFirst()
+                        .orElse(null);
+
+                if (matchingHouse == null) {
+                    return McpToolResponse.error(
+                            String.format("Aucune maison trouvee avec le nom '%s'.", houseName));
+                }
+                targetHouse = houseService.switchActiveHouse(userId, matchingHouse.id());
+            }
+
+            return McpToolResponse.success(
+                    String.format("Maison active basculee sur '%s'.", targetHouse.name()),
+                    houseToMap(targetHouse)
+            );
+        } catch (IllegalArgumentException e) {
+            return McpToolResponse.error("Parameter 'houseId' must be a valid UUID.");
+        } catch (Exception e) {
+            return McpToolResponse.error("Impossible de changer de maison active: " + e.getMessage());
+        }
     }
 
     /**
@@ -694,6 +774,26 @@ public class McpService {
     public McpSchemaResponse getSchema() {
         List<ToolSchema> tools = List.of(
                 new ToolSchema(
+                        "list_houses",
+                        "Lister toutes les maisons de l'utilisateur",
+                        Map.of()
+                ),
+                new ToolSchema(
+                        "get_active_house",
+                        "Obtenir la maison actuellement active",
+                        Map.of()
+                ),
+                new ToolSchema(
+                        "switch_active_house",
+                        "Changer la maison active de l'utilisateur",
+                        Map.of(
+                                "houseId", new ParameterSchema("string", false,
+                                        "ID UUID de la maison a activer"),
+                                "houseName", new ParameterSchema("string", false,
+                                        "Nom de la maison a activer")
+                        )
+                ),
+                new ToolSchema(
                         "list_plants",
                         "Lister toutes les plantes de l'utilisateur",
                         Map.of()
@@ -816,6 +916,22 @@ public class McpService {
         );
 
         return new McpSchemaResponse("Plant Management MCP", "1.0.0", tools);
+    }
+
+    /**
+     * Convert a house DTO to a simple map for MCP responses.
+     */
+    private Map<String, Object> houseToMap(HouseResponseDTO house) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", house.id().toString());
+        m.put("name", house.name());
+        m.put("inviteCode", house.inviteCode());
+        m.put("memberCount", house.memberCount());
+        m.put("roomCount", house.roomCount());
+        m.put("isActive", house.isActive());
+        m.put("role", house.role());
+        m.put("joinedAt", house.joinedAt() != null ? house.joinedAt().toString() : null);
+        return m;
     }
 
     /**

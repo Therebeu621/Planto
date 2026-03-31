@@ -251,6 +251,24 @@ public class RoomResourceTest {
     }
 
     @Test
+    void testCreateRoom_blankName_shouldReturn400WithCleanMessage() {
+        given()
+                .header("Authorization", "Bearer " + accessToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                            "name": "",
+                            "type": "BEDROOM"
+                        }
+                        """)
+                .when()
+                .post("/rooms")
+                .then()
+                .statusCode(400)
+                .body("message", equalTo("Le nom de la piece est requis"));
+    }
+
+    @Test
     void testCreateRoom_livingRoom_shouldReturn201() {
         given()
                 .header("Authorization", "Bearer " + accessToken)

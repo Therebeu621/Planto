@@ -158,7 +158,7 @@ echo -e "  ${CYAN}Cleaned $CLEANED existing notifications${NC}"
 # Pre-setup: Create test plants with overdue watering via MCP
 # ============================================================
 
-MCP_KEY="test-mcp-key"
+MCP_KEY="mcp-plant-secret-key"
 
 echo -e "\n${YELLOW}[Pre-setup] Creation de plantes de test en retard d'arrosage${NC}"
 

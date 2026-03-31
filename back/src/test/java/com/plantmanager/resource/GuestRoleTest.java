@@ -58,7 +58,8 @@ public class GuestRoleTest {
     }
 
     private void joinAsTest2(String inviteCode) {
-        given()
+        // 1. Send join request (creates pending invitation)
+        String invitationId = given()
                 .header("Authorization", TestUtils.authHeader(test2Token))
                 .contentType(ContentType.JSON)
                 .body("""
@@ -66,6 +67,16 @@ public class GuestRoleTest {
                         """.formatted(inviteCode))
                 .when()
                 .post("/houses/join")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+
+        // 2. Owner accepts the invitation
+        given()
+                .header("Authorization", TestUtils.authHeader(ownerToken))
+                .when()
+                .put("/houses/invitations/" + invitationId + "/accept")
                 .then()
                 .statusCode(200);
     }
@@ -199,7 +210,8 @@ public class GuestRoleTest {
         String houseId = createHouse("Default Role House");
         String inviteCode = getInviteCode(houseId);
 
-        given()
+        // Send join request
+        String invitationId = given()
                 .header("Authorization", TestUtils.authHeader(test2Token))
                 .contentType(ContentType.JSON)
                 .body("""
@@ -208,8 +220,26 @@ public class GuestRoleTest {
                 .when()
                 .post("/houses/join")
                 .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+
+        // Owner accepts
+        given()
+                .header("Authorization", TestUtils.authHeader(ownerToken))
+                .when()
+                .put("/houses/invitations/" + invitationId + "/accept")
+                .then()
+                .statusCode(200);
+
+        // Verify test2 joined as MEMBER
+        given()
+                .header("Authorization", TestUtils.authHeader(ownerToken))
+                .when()
+                .get("/houses/" + houseId + "/members")
+                .then()
                 .statusCode(200)
-                .body("role", equalTo("MEMBER"));
+                .body("find { it.role == 'MEMBER' }.role", equalTo("MEMBER"));
     }
 
     // ==================== GUEST READ ACCESS TESTS ====================

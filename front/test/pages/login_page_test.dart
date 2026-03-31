@@ -394,22 +394,6 @@ void main() {
     });
   });
 
-  group('LoginPage - LeafPatternPainter', () {
-    testWidgets('LeafPatternPainter shouldRepaint returns false', (tester) async {
-      final painter = LeafPatternPainter();
-      expect(painter.shouldRepaint(LeafPatternPainter()), isFalse);
-    });
-
-    testWidgets('LeafPatternPainter paints without error', (tester) async {
-      setupPageTest(tester);
-      origOnError = suppressOverflowErrors();
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pump();
-      // If we got here without error, paint() worked
-      expect(find.byType(CustomPaint), findsWidgets);
-    });
-  });
-
   group('LoginPage - Error message styling', () {
     testWidgets('error container has error_outline icon and text', (tester) async {
       setupPageTest(tester);

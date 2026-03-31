@@ -160,7 +160,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pump();
 
-      await tester.enterText(find.widgetWithText(TextField, 'Adresse email'), 'test@test.com');
+      await tester.enterText(find.widgetWithText(TextField, 'Adresse email'), 'test@gmail.com');
       await tester.enterText(find.widgetWithText(TextField, 'Mot de passe'), 'password123');
       await tester.pump();
 
@@ -193,7 +193,7 @@ void main() {
       await tester.pump();
 
       await tester.enterText(find.widgetWithText(TextField, 'Nom d\'affichage'), 'Test');
-      await tester.enterText(find.widgetWithText(TextField, 'Adresse email'), 'test@test.com');
+      await tester.enterText(find.widgetWithText(TextField, 'Adresse email'), 'test@gmail.com');
       await tester.pump();
 
       await tester.tap(find.text('S\'INSCRIRE'));
@@ -226,7 +226,7 @@ void main() {
       await tester.pump();
 
       await tester.enterText(find.widgetWithText(TextField, 'Nom d\'affichage'), 'Test User');
-      await tester.enterText(find.widgetWithText(TextField, 'Adresse email'), 'test@test.com');
+      await tester.enterText(find.widgetWithText(TextField, 'Adresse email'), 'test@gmail.com');
       await tester.enterText(find.widgetWithText(TextField, 'Mot de passe'), 'short');
       await tester.pump();
 
@@ -254,7 +254,7 @@ void main() {
       await tester.pump();
 
       await tester.enterText(find.widgetWithText(TextField, 'Nom d\'affichage'), 'Test User');
-      await tester.enterText(find.widgetWithText(TextField, 'Adresse email'), 'test@test.com');
+      await tester.enterText(find.widgetWithText(TextField, 'Adresse email'), 'test@gmail.com');
       await tester.enterText(find.widgetWithText(TextField, 'Mot de passe'), 'password123');
       await tester.pump();
 
@@ -287,7 +287,7 @@ void main() {
       await tester.pump();
 
       await tester.enterText(find.widgetWithText(TextField, 'Nom d\'affichage'), 'Test User');
-      await tester.enterText(find.widgetWithText(TextField, 'Adresse email'), 'existing@test.com');
+      await tester.enterText(find.widgetWithText(TextField, 'Adresse email'), 'existing@gmail.com');
       await tester.enterText(find.widgetWithText(TextField, 'Mot de passe'), 'password123');
       await tester.pump();
 
@@ -313,7 +313,7 @@ void main() {
       await tester.pump();
 
       await tester.enterText(find.widgetWithText(TextField, 'Nom d\'affichage'), 'Test User');
-      await tester.enterText(find.widgetWithText(TextField, 'Adresse email'), 'test@test.com');
+      await tester.enterText(find.widgetWithText(TextField, 'Adresse email'), 'test@gmail.com');
       await tester.enterText(find.widgetWithText(TextField, 'Mot de passe'), 'password123');
       await tester.pump();
 
@@ -341,7 +341,7 @@ void main() {
       await tester.pump();
 
       await tester.enterText(find.widgetWithText(TextField, 'Nom d\'affichage'), 'Test User');
-      await tester.enterText(find.widgetWithText(TextField, 'Adresse email'), 'test@test.com');
+      await tester.enterText(find.widgetWithText(TextField, 'Adresse email'), 'test@gmail.com');
       await tester.enterText(find.widgetWithText(TextField, 'Mot de passe'), 'password123');
       await tester.pump();
 
@@ -375,7 +375,7 @@ void main() {
       await tester.pump();
 
       await tester.enterText(find.widgetWithText(TextField, 'Nom d\'affichage'), 'Test User');
-      await tester.enterText(find.widgetWithText(TextField, 'Adresse email'), 'new@test.com');
+      await tester.enterText(find.widgetWithText(TextField, 'Adresse email'), 'new@gmail.com');
       await tester.enterText(find.widgetWithText(TextField, 'Mot de passe'), 'password123');
       await tester.pump();
 

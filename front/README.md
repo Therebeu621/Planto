@@ -1,128 +1,185 @@
-# 🌿 PLANTO - Frontend Flutter
+# PLANTO Frontend
 
-Application mobile cross-platform pour PLANTO, développée avec Flutter et Riverpod.
+Frontend Flutter de PLANTO. L'application consomme l'API Quarkus du backend et couvre l'authentification, la gestion des maisons partagees, des plantes, des pieces, du calendrier, du potager, des QR codes, des stats, de l'IA Gemini et des notifications.
 
-## 📱 Plateformes supportées
+## Architecture
+
+```
+Flutter (mobile / web / desktop)
+        |
+        | HTTP JSON + Bearer JWT
+        v
+Backend Quarkus (/api/v1)
+```
+
+Le frontend utilise :
+- `dio` pour les appels API
+- `flutter_riverpod` pour une partie de l'etat applicatif
+- `shared_preferences` pour la persistance locale
+- Firebase Messaging + notifications locales pour les rappels
+- Gemini cote front pour l'identification IA et certaines interactions conversationnelles
+
+## Plateformes supportees
 
 - Android
 - iOS
 - Web
-- macOS / Windows / Linux (Desktop)
+- macOS / Windows / Linux
 
----
-
-## � Lancement avec Docker (Recommandé)
-
-**Le plus simple !** Juste besoin de Docker installé.
-
-```bash
-# Lancer l'application
-docker-compose up
-
-# Ou en arrière-plan
-docker-compose up -d
-```
-
-L'app sera disponible sur **http://localhost:3000** 🚀
-
-```bash
-# Arrêter
-docker-compose down
-
-# Rebuild après modifications
-docker-compose up --build
-```
-
----
-
-## 🛠️ Lancement sans Docker (Développement)
-
-### Prérequis
-
-**macOS (Homebrew) :**
-```bash
-brew install --cask flutter
-```
-
-**Windows / Linux :**
-Suivre le guide officiel : https://docs.flutter.dev/get-started/install
-
-### Vérifier l'installation
-```bash
-flutter doctor
-```
-
-### Lancer le projet
-```bash
-# Installer les dépendances
-flutter pub get
-
-# Lancer l'application
-flutter run
-```
-
----
-
-## 📂 Structure du projet
+## Structure du projet
 
 ```
 lib/
-├── main.dart                 # Point d'entrée
+├── main.dart
 ├── core/
-│   ├── constants/            # Constantes globales
-│   ├── theme/                # Configuration du thème
-│   ├── utils/                # Utilitaires et extensions
-│   └── widgets/              # Widgets réutilisables
+│   ├── constants/   # Constantes globales et configuration runtime
+│   ├── models/      # Modeles partages
+│   ├── services/    # Services API, auth, notifications, Gemini, etc.
+│   ├── theme/       # Theme et styles communs
+│   ├── utils/       # Helpers et extensions
+│   └── widgets/     # Widgets reutilisables
 └── features/
-    ├── auth/                 # Authentification
-    ├── home/                 # Page d'accueil
-    └── settings/             # Paramètres
+    ├── auth/
+    ├── calendar/
+    ├── chat/
+    ├── garden/
+    ├── home/
+    ├── house/
+    ├── iot/
+    ├── onboarding/
+    ├── plant/
+    ├── pot/
+    ├── profile/
+    ├── room/
+    └── stats/
 ```
 
-## 🎨 Stack technique
+## Configuration
 
-| Package | Version | Usage |
-|---------|---------|-------|
-| flutter_riverpod | ^2.6.1 | State Management |
-| go_router | ^14.6.2 | Navigation |
-| dio | ^5.7.0 | Client HTTP |
-| shared_preferences | ^2.3.3 | Stockage local |
-| google_fonts | ^6.2.1 | Polices |
+La configuration runtime principale passe par `--dart-define`.
 
-## 🏃 Commandes utiles
+Variables utiles :
+- `API_BASE_URL` : URL du backend Quarkus
+- `GEMINI_API_KEY` : cle Gemini utilisee par les fonctionnalites IA cote front
+
+Exemple local :
 
 ```bash
-# Lancer sur Chrome (Web)
-flutter run -d chrome
-
-# Lancer sur Android
-flutter run -d android
-
-# Lancer sur iOS (Mac uniquement)
-flutter run -d ios
-
-# Analyser le code
-flutter analyze
-
-# Lancer les tests
-flutter test
+flutter run \
+  --dart-define=API_BASE_URL=http://localhost:8080 \
+  --dart-define=GEMINI_API_KEY=your_gemini_api_key
 ```
 
-## ⚙️ Configuration
+Exemple Android emulator :
 
-L'URL de l'API backend est configurée dans :
-```
-lib/core/constants/app_constants.dart
-```
-
-```dart
-static const String apiBaseUrl = 'http://localhost:8080';
+```bash
+flutter run -d android \
+  --dart-define=API_BASE_URL=http://10.0.2.2:8080 \
+  --dart-define=GEMINI_API_KEY=your_gemini_api_key
 ```
 
-## 🔗 Backend
+Important :
+- ne jamais mettre de vraies cles API dans le repo
+- utiliser uniquement des placeholders dans la documentation
+- la fallback URL est geree dans `lib/core/constants/app_constants.dart`
 
-Ce frontend communique avec le backend Quarkus situé dans `jee-groupeprojet4/`.
+## Lancement en developpement
 
-## 👥 Équipe
+Prerequis :
+- Flutter SDK installe
+- `flutter doctor` sans erreur bloquante
+- backend Quarkus demarre localement ou accessible sur une URL connue
+
+Installation :
+
+```bash
+flutter pub get
+```
+
+Lancement web :
+
+```bash
+flutter run -d chrome \
+  --dart-define=API_BASE_URL=http://localhost:8080 \
+  --dart-define=GEMINI_API_KEY=your_gemini_api_key
+```
+
+Lancement Android :
+
+```bash
+flutter run -d android \
+  --dart-define=API_BASE_URL=http://10.0.2.2:8080 \
+  --dart-define=GEMINI_API_KEY=your_gemini_api_key
+```
+
+Lancement iOS :
+
+```bash
+flutter run -d ios \
+  --dart-define=API_BASE_URL=http://localhost:8080 \
+  --dart-define=GEMINI_API_KEY=your_gemini_api_key
+```
+
+## Lancement avec Docker
+
+Le projet contient aussi un mode de lancement conteneurise pour le frontend web :
+
+```bash
+docker-compose up --build
+```
+
+Puis :
+- application accessible sur `http://localhost:3000`
+
+Arret :
+
+```bash
+docker-compose down
+```
+
+## Qualite et CI
+
+Commandes locales utiles :
+
+```bash
+flutter analyze --no-fatal-infos --no-fatal-warnings
+flutter test --no-pub
+```
+
+La pipeline GitLab front execute actuellement :
+- `flutter pub get`
+- `flutter analyze --no-fatal-infos --no-fatal-warnings`
+- `flutter test --no-pub`
+- build d'image Docker via Kaniko
+
+## Dependances principales
+
+| Package | Usage |
+|---------|-------|
+| `flutter_riverpod` | Etat applicatif |
+| `go_router` | Navigation |
+| `dio` | Client HTTP |
+| `shared_preferences` | Stockage local |
+| `firebase_core` / `firebase_messaging` | Push notifications |
+| `flutter_local_notifications` | Notifications locales |
+| `google_sign_in` | Connexion Google |
+| `image_picker` | Capture / selection d'image |
+| `share_plus` | Partage natif |
+
+## Lien avec le backend
+
+Le frontend depend du backend Quarkus situe dans `../back`.
+
+Points d'integration principaux :
+- authentification JWT
+- CRUD plantes / pieces / maisons
+- historique de soins et calendrier
+- QR codes
+- stats et gamification
+- mode vacances et collaboration
+- potager
+- IA Gemini cote front pour les experiences guidees
+
+## Equipe
 
 - Groupe Projet 4

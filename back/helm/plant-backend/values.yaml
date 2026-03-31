@@ -30,7 +30,7 @@ env:
   DB_NAME: plant_db
   DB_USER: plant_user
   DB_PASSWORD: plant_pass
-  MCP_API_KEY: ""
+  MCP_API_KEY: mcp-plant-secret-key
   PHOTOS_PATH: /app/photos
 
 postgresql:

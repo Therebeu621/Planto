@@ -38,7 +38,7 @@ class CareLog {
       case 'TREATMENT':
         return 'Traitement';
       case 'NOTE':
-        return 'Note';
+        return 'Memo';
       default:
         return action;
     }

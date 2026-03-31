@@ -152,10 +152,6 @@ class _LoginPageState extends State<LoginPage> {
       decoration: BoxDecoration(
         color: AppTheme.scaffoldBg(context),
       ),
-      child: CustomPaint(
-        size: Size.infinite,
-        painter: LeafPatternPainter(),
-      ),
     );
   }
 
@@ -367,9 +363,12 @@ class _LoginPageState extends State<LoginPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          'Pas encore de compte ? ',
-          style: TextStyle(color: AppTheme.textSecondaryC(context)),
+        Flexible(
+          child: Text(
+            'Pas encore de compte ? ',
+            style: TextStyle(color: AppTheme.textSecondaryC(context)),
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
         TextButton(
           onPressed: () {
@@ -393,47 +392,4 @@ class _LoginPageState extends State<LoginPage> {
       ],
     );
   }
-}
-
-/// Custom painter for leaf pattern background
-class LeafPatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppTheme.secondaryColor.withAlpha(38)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-
-    // Draw decorative leaves in corners
-    _drawLeaf(canvas, paint, Offset(size.width * 0.1, size.height * 0.15), 0.8);
-    _drawLeaf(canvas, paint, Offset(size.width * 0.05, size.height * 0.25), 0.6, flipX: true);
-    _drawLeaf(canvas, paint, Offset(size.width * 0.85, size.height * 0.1), 0.7, flipX: true);
-    _drawLeaf(canvas, paint, Offset(size.width * 0.9, size.height * 0.2), 0.5);
-    _drawLeaf(canvas, paint, Offset(size.width * 0.08, size.height * 0.75), 0.7);
-    _drawLeaf(canvas, paint, Offset(size.width * 0.92, size.height * 0.8), 0.6, flipX: true);
-  }
-
-  void _drawLeaf(Canvas canvas, Paint paint, Offset position, double scale, {bool flipX = false}) {
-    canvas.save();
-    canvas.translate(position.dx, position.dy);
-    if (flipX) canvas.scale(-1, 1);
-    canvas.scale(scale);
-
-    final path = Path();
-    // Simple leaf shape
-    path.moveTo(0, 0);
-    path.quadraticBezierTo(30, -20, 60, -60);
-    path.quadraticBezierTo(40, -40, 20, -30);
-    path.quadraticBezierTo(10, -20, 0, 0);
-    
-    // Stem
-    path.moveTo(0, 0);
-    path.lineTo(0, 40);
-
-    canvas.drawPath(path, paint);
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

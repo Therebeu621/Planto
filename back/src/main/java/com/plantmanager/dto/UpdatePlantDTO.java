@@ -3,6 +3,8 @@ package com.plantmanager.dto;
 import com.plantmanager.entity.enums.Exposure;
 import com.plantmanager.entity.enums.HealthStatus;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
@@ -49,5 +51,7 @@ public record UpdatePlantDTO(
         Boolean markAsWatered,
 
         /** Pot diameter in cm */
+        @DecimalMin(value = "0.1", message = "Le diametre du pot doit etre superieur a 0")
+        @DecimalMax(value = "200.0", message = "Le diametre du pot doit etre inferieur ou egal a 200 cm")
         BigDecimal potDiameterCm) {
 }

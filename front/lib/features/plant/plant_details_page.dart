@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:planto/core/models/care_log.dart';
 import 'package:planto/core/models/plant.dart';
 import 'package:planto/core/models/room.dart';
 import 'package:planto/core/models/pot_stock.dart';
@@ -9,6 +10,7 @@ import 'package:planto/core/services/pot_service.dart';
 import 'package:planto/core/services/room_service.dart';
 import 'package:planto/core/theme/app_theme.dart';
 import 'package:planto/features/plant/photo_gallery_page.dart';
+import 'package:planto/features/plant/plant_care_history_page.dart';
 import 'package:planto/features/plant/qr_code_page.dart';
 
 class PlantDetailsPage extends StatefulWidget {
@@ -37,10 +39,13 @@ class PlantDetailsPage extends StatefulWidget {
 
 class _PlantDetailsPageState extends State<PlantDetailsPage>
     with SingleTickerProviderStateMixin {
+  static const double _maxPotDiameterCm = 200.0;
+
   late final PlantService _plantService = widget.plantService ?? PlantService();
   late final RoomService _roomService = widget.roomService ?? RoomService();
   late final HouseService _houseService = widget.houseService ?? HouseService();
-  late final NotificationService _notificationService = widget.notificationService ?? NotificationService();
+  late final NotificationService _notificationService =
+      widget.notificationService ?? NotificationService();
   late final PotService _potService = widget.potService ?? PotService();
 
   Plant? _plant;
@@ -53,6 +58,7 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
   // Edit form controllers
   late TextEditingController _nicknameController;
   late TextEditingController _notesController;
+  late TextEditingController _potDiameterController;
   String? _selectedRoomId;
   int _wateringInterval = 7;
   String _exposure = 'PARTIAL_SHADE';
@@ -68,6 +74,7 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
     super.initState();
     _nicknameController = TextEditingController();
     _notesController = TextEditingController();
+    _potDiameterController = TextEditingController();
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -83,8 +90,47 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
   void dispose() {
     _nicknameController.dispose();
     _notesController.dispose();
+    _potDiameterController.dispose();
     _animationController.dispose();
     super.dispose();
+  }
+
+  double? _parsePotDiameter(String? rawValue) {
+    final normalized = rawValue?.trim().replaceAll(',', '.') ?? '';
+    if (normalized.isEmpty) return null;
+    return double.tryParse(normalized);
+  }
+
+  String? _validatePotDiameter(String? rawValue) {
+    final normalized = rawValue?.trim().replaceAll(',', '.') ?? '';
+    if (normalized.isEmpty) return null;
+
+    final diameter = double.tryParse(normalized);
+    if (diameter == null) {
+      return 'Entrez un nombre valide';
+    }
+
+    final parts = normalized.split('.');
+    if (parts.length > 1 && parts[1].length > 1) {
+      return 'Un seul chiffre apres la virgule est autorise';
+    }
+
+    if (diameter <= 0) {
+      return 'Le diametre du pot doit etre superieur a 0';
+    }
+
+    if (diameter > _maxPotDiameterCm) {
+      return 'Le diametre du pot doit etre inferieur ou egal a 200 cm';
+    }
+
+    return null;
+  }
+
+  String _formatPotDiameter(double? diameter) {
+    if (diameter == null) return '';
+    return diameter.truncateToDouble() == diameter
+        ? diameter.toInt().toString()
+        : diameter.toStringAsFixed(1);
   }
 
   Future<void> _loadData() async {
@@ -125,6 +171,7 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
     if (_plant == null) return;
     _nicknameController.text = _plant!.nickname;
     _notesController.text = _plant!.notes ?? '';
+    _potDiameterController.text = _formatPotDiameter(_plant!.potDiameterCm);
     _selectedRoomId = _plant!.roomId ?? _plant!.room?.id;
     _wateringInterval = _plant!.wateringIntervalDays ?? 7;
     _exposure = _plant!.exposure ?? 'PARTIAL_SHADE';
@@ -136,26 +183,34 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
   Future<void> _saveChanges() async {
     if (_plant == null) return;
 
+    final potDiameterError = _validatePotDiameter(_potDiameterController.text);
+    if (potDiameterError != null) {
+      _showErrorSnackbar(potDiameterError);
+      return;
+    }
+
+    final potDiameter = _parsePotDiameter(_potDiameterController.text);
+    final plantId = _plant!.id;
     setState(() => _isSaving = true);
 
     try {
-      final updatedPlant = await _plantService.updatePlant(
-        plantId: _plant!.id,
+      await _plantService.updatePlant(
+        plantId: plantId,
         nickname: _nicknameController.text.trim(),
         roomId: _selectedRoomId,
         wateringIntervalDays: _wateringInterval,
         exposure: _exposure,
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
+        notes: _notesController.text.trim(),
+        potDiameterCm: potDiameter,
         isSick: _isSick,
         isWilted: _isWilted,
         needsRepotting: _needsRepotting,
       );
+      final refreshedPlant = await _plantService.getPlantById(plantId);
 
       if (mounted) {
         setState(() {
-          _plant = updatedPlant;
+          _plant = refreshedPlant;
           _isEditMode = false;
           _isSaving = false;
         });
@@ -197,7 +252,10 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Annuler', style: TextStyle(color: AppTheme.textGrey(context))),
+            child: Text(
+              'Annuler',
+              style: TextStyle(color: AppTheme.textGrey(context)),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -265,7 +323,10 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Annuler', style: TextStyle(color: AppTheme.textGrey(context))),
+            child: Text(
+              'Annuler',
+              style: TextStyle(color: AppTheme.textGrey(context)),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -293,12 +354,14 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 8),
-                Text('${_plant!.nickname} a ete supprimee'),
+                Flexible(child: Text('${_plant!.nickname} a ete supprimee', overflow: TextOverflow.ellipsis)),
               ],
             ),
             backgroundColor: AppTheme.successColor,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
@@ -316,7 +379,7 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
           children: [
             const Icon(Icons.check_circle, color: Colors.white),
             const SizedBox(width: 8),
-            Text(message),
+            Flexible(child: Text(message, overflow: TextOverflow.ellipsis)),
           ],
         ),
         backgroundColor: AppTheme.successColor,
@@ -410,6 +473,7 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
 
   Widget _buildViewMode() {
     final plant = _plant!;
+    final avatarSize = (MediaQuery.of(context).size.width * 0.22).clamp(70.0, 120.0);
 
     return FadeTransition(
       opacity: _fadeAnimation,
@@ -417,7 +481,7 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
         slivers: [
           // Hero header
           SliverAppBar(
-            expandedHeight: 280,
+            expandedHeight: (MediaQuery.of(context).size.height * 0.35).clamp(200.0, 350.0),
             pinned: true,
             backgroundColor: AppTheme.primaryColor,
             leading: IconButton(
@@ -427,7 +491,11 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
                   color: AppTheme.overlayWhite(context, 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                child: const Icon(
+                  Icons.arrow_back,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
               onPressed: () => Navigator.pop(context),
             ),
@@ -439,11 +507,22 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
                     color: AppTheme.overlayWhite(context, 0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.photo_library, color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.photo_library,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
-                onPressed: () => Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => PhotoGalleryPage(plantId: widget.plantId, plantName: _plant!.nickname),
-                )).then((_) => _loadData()),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PhotoGalleryPage(
+                      plantId: widget.plantId,
+                      plantName: _plant!.nickname,
+                      canManage: _plant!.canManage,
+                    ),
+                  ),
+                ).then((_) => _loadData()),
               ),
               IconButton(
                 icon: Container(
@@ -452,23 +531,34 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
                     color: AppTheme.overlayWhite(context, 0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.qr_code, color: Colors.white, size: 20),
-                ),
-                onPressed: () => Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => QrCodePage(plantId: widget.plantId, plantName: _plant!.nickname),
-                )),
-              ),
-              IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.overlayWhite(context, 0.2),
-                    shape: BoxShape.circle,
+                  child: const Icon(
+                    Icons.qr_code,
+                    color: Colors.white,
+                    size: 20,
                   ),
-                  child: const Icon(Icons.edit, color: Colors.white, size: 20),
                 ),
-                onPressed: () => setState(() => _isEditMode = true),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => QrCodePage(
+                      plantId: widget.plantId,
+                      plantName: _plant!.nickname,
+                    ),
+                  ),
+                ),
               ),
+              if (plant.canManage)
+                IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.overlayWhite(context, 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.edit, color: Colors.white, size: 20),
+                  ),
+                  onPressed: () => setState(() => _isEditMode = true),
+                ),
               const SizedBox(width: 8),
             ],
             flexibleSpace: FlexibleSpaceBar(
@@ -483,9 +573,41 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Quick actions
-                  _buildQuickActions(plant),
-                  const SizedBox(height: 24),
+                  // Read-only banner
+                  if (!plant.canManage) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.visibility,
+                              size: 18, color: Colors.orange.shade700),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Lecture seule',
+                            style: TextStyle(
+                              color: Colors.orange.shade800,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Quick actions (only if user can manage)
+                  if (plant.canManage) ...[
+                    _buildQuickActions(plant),
+                    const SizedBox(height: 24),
+                  ],
 
                   // Status cards
                   _buildStatusSection(plant),
@@ -505,9 +627,11 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
                   _buildCareHistorySection(plant),
                   const SizedBox(height: 24),
 
-                  // Danger zone
-                  _buildDangerZone(),
-                  const SizedBox(height: 40),
+                  // Danger zone (only if user can manage)
+                  if (plant.canManage) ...[
+                    _buildDangerZone(),
+                    const SizedBox(height: 40),
+                  ],
                 ],
               ),
             ),
@@ -518,15 +642,13 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
   }
 
   Widget _buildHeroHeader(Plant plant) {
+    final avatarSize = (MediaQuery.of(context).size.width * 0.22).clamp(70.0, 120.0);
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppTheme.primaryColor,
-            AppTheme.primaryColor.withGreen(150),
-          ],
+          colors: [AppTheme.primaryColor, AppTheme.primaryColor.withGreen(150)],
         ),
       ),
       child: Stack(
@@ -536,8 +658,8 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
             right: -50,
             top: -50,
             child: Container(
-              width: 200,
-              height: 200,
+              width: MediaQuery.of(context).size.width * 0.45,
+              height: MediaQuery.of(context).size.width * 0.45,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppTheme.overlayWhite(context, 0.1),
@@ -548,8 +670,8 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
             left: -30,
             bottom: 40,
             child: Container(
-              width: 100,
-              height: 100,
+              width: avatarSize,
+              height: avatarSize,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppTheme.overlayWhite(context, 0.1),
@@ -568,8 +690,8 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
                   Hero(
                     tag: 'plant_${plant.id}',
                     child: Container(
-                      width: 100,
-                      height: 100,
+                      width: avatarSize,
+                      height: avatarSize,
                       decoration: BoxDecoration(
                         color: AppTheme.cardBg(context),
                         shape: BoxShape.circle,
@@ -589,12 +711,12 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
                                 errorBuilder: (_, __, ___) => _buildPlantIcon(),
                               )
                             : plant.species?.imageUrl != null
-                                ? Image.network(
-                                    plant.species!.imageUrl!,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => _buildPlantIcon(),
-                                  )
-                                : _buildPlantIcon(),
+                            ? Image.network(
+                                plant.species!.imageUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => _buildPlantIcon(),
+                              )
+                            : _buildPlantIcon(),
                       ),
                     ),
                   ),
@@ -615,7 +737,10 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
                   if (plant.speciesCommonName != null) ...[
                     const SizedBox(height: 4),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppTheme.overlayWhite(context, 0.2),
                         borderRadius: BorderRadius.circular(20),
@@ -668,7 +793,9 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
               child: _buildActionButton(
                 icon: Icons.water_drop,
                 label: 'Arroser',
-                color: plant.needsWatering ? Colors.orange.shade700 : Colors.grey,
+                color: plant.needsWatering
+                    ? Colors.orange.shade700
+                    : Colors.grey,
                 onTap: _waterPlant,
                 badge: plant.needsWatering ? '!' : null,
               ),
@@ -686,44 +813,80 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
         ),
         const SizedBox(height: 12),
         // Care actions row
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionButton(
-                icon: Icons.spa_outlined,
-                label: 'Fertiliser',
-                color: Colors.green.shade700,
-                onTap: () => _showCareLogDialog('FERTILIZING', 'Fertilisation', Icons.spa_outlined, Colors.green.shade700),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildActionButton(
-                icon: Icons.content_cut,
-                label: 'Tailler',
-                color: Colors.purple.shade700,
-                onTap: () => _showCareLogDialog('PRUNING', 'Taille', Icons.content_cut, Colors.purple.shade700),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildActionButton(
-                icon: Icons.healing,
-                label: 'Traiter',
-                color: Colors.red.shade700,
-                onTap: () => _showCareLogDialog('TREATMENT', 'Traitement', Icons.healing, Colors.red.shade700),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildActionButton(
-                icon: Icons.note_add_outlined,
-                label: 'Note',
-                color: Colors.blueGrey,
-                onTap: () => _showCareLogDialog('NOTE', 'Note', Icons.note_add_outlined, Colors.blueGrey),
-              ),
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final buttonWidth = ((constraints.maxWidth - 8.0 * 3) / 4.0).floorToDouble();
+            return Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                SizedBox(
+                  width: buttonWidth < 80
+                      ? ((constraints.maxWidth - 8) / 2).floorToDouble()
+                      : buttonWidth,
+                  child: _buildActionButton(
+                    icon: Icons.spa_outlined,
+                    label: 'Fertiliser',
+                    color: Colors.green.shade700,
+                    onTap: () => _showCareLogDialog(
+                      'FERTILIZING',
+                      'Fertilisation',
+                      Icons.spa_outlined,
+                      Colors.green.shade700,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: buttonWidth < 80
+                      ? ((constraints.maxWidth - 8) / 2).floorToDouble()
+                      : buttonWidth,
+                  child: _buildActionButton(
+                    icon: Icons.content_cut,
+                    label: 'Tailler',
+                    color: Colors.purple.shade700,
+                    onTap: () => _showCareLogDialog(
+                      'PRUNING',
+                      'Taille',
+                      Icons.content_cut,
+                      Colors.purple.shade700,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: buttonWidth < 80
+                      ? ((constraints.maxWidth - 8) / 2).floorToDouble()
+                      : buttonWidth,
+                  child: _buildActionButton(
+                    icon: Icons.healing,
+                    label: 'Traiter',
+                    color: Colors.red.shade700,
+                    onTap: () => _showCareLogDialog(
+                      'TREATMENT',
+                      'Traitement',
+                      Icons.healing,
+                      Colors.red.shade700,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: buttonWidth < 80
+                      ? ((constraints.maxWidth - 8) / 2).floorToDouble()
+                      : buttonWidth,
+                  child: _buildActionButton(
+                    icon: Icons.note_add_outlined,
+                    label: 'Memo',
+                    color: Colors.blueGrey,
+                    onTap: () => _showCareLogDialog(
+                      'NOTE',
+                      'Memo',
+                      Icons.note_add_outlined,
+                      Colors.blueGrey,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
         if (plant.needsRepotting) ...[
           const SizedBox(height: 12),
@@ -742,7 +905,12 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
     );
   }
 
-  Future<void> _showCareLogDialog(String action, String label, IconData icon, Color color) async {
+  Future<void> _showCareLogDialog(
+    String action,
+    String label,
+    IconData icon,
+    Color color,
+  ) async {
     if (_plant == null) return;
     final notesController = TextEditingController();
 
@@ -761,15 +929,15 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
               child: Icon(icon, color: color),
             ),
             const SizedBox(width: 12),
-            Text(label),
+            Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
           ],
         ),
         content: TextField(
           controller: notesController,
           decoration: InputDecoration(
-            labelText: 'Notes (optionnel)',
+            labelText: action == 'NOTE' ? 'Memo' : 'Notes (optionnel)',
             hintText: action == 'NOTE'
-                ? 'Ecrivez votre observation...'
+                ? "Ajoutez un memo a l'historique..."
                 : 'Ex: produit utilise, observations...',
             prefixIcon: const Icon(Icons.note_outlined),
           ),
@@ -779,13 +947,18 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Annuler', style: TextStyle(color: AppTheme.textGrey(context))),
+            child: Text(
+              'Annuler',
+              style: TextStyle(color: AppTheme.textGrey(context)),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: color,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: Text('Enregistrer'),
           ),
@@ -812,6 +985,51 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
     }
   }
 
+  Future<void> _deleteCareLog(CareLog log) async {
+    if (_plant == null || log.action != 'NOTE') return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Supprimer ce memo ?'),
+        content: const Text(
+          "Ce memo sera retire de l'historique de la plante.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Annuler',
+              style: TextStyle(color: AppTheme.textSecondaryC(context)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+            ),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _plantService.deleteCareLog(_plant!.id, log.id);
+      await _loadData();
+      if (mounted) {
+        _showSuccessSnackbar('Memo supprime');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackbar('Erreur: $e');
+      }
+    }
+  }
+
   Future<void> _showRepotDialog() async {
     if (_plant == null) return;
 
@@ -832,7 +1050,9 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Text(
             'Rempoter ${_plant!.nickname}',
             style: const TextStyle(fontWeight: FontWeight.w600),
@@ -870,14 +1090,18 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
                     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                   ),
                   const SizedBox(height: 8),
-                  ...suggestedPots.map((pot) => RadioListTile<PotStock>(
-                        title: Text('Pot de ${pot.sizeDisplay}'),
-                        subtitle: Text('${pot.quantity} disponible${pot.quantity > 1 ? 's' : ''}'),
-                        value: pot,
-                        groupValue: selectedPot,
-                        activeColor: AppTheme.primaryColor,
-                        onChanged: (v) => setDialogState(() => selectedPot = v),
-                      )),
+                  ...suggestedPots.map(
+                    (pot) => RadioListTile<PotStock>(
+                      title: Text('Pot de ${pot.sizeDisplay}'),
+                      subtitle: Text(
+                        '${pot.quantity} disponible${pot.quantity > 1 ? 's' : ''}',
+                      ),
+                      value: pot,
+                      groupValue: selectedPot,
+                      activeColor: AppTheme.primaryColor,
+                      onChanged: (v) => setDialogState(() => selectedPot = v),
+                    ),
+                  ),
                 ],
                 const SizedBox(height: 12),
                 TextField(
@@ -895,10 +1119,15 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: Text('Annuler', style: TextStyle(color: AppTheme.textSecondaryC(context))),
+              child: Text(
+                'Annuler',
+                style: TextStyle(color: AppTheme.textSecondaryC(context)),
+              ),
             ),
             ElevatedButton(
-              onPressed: selectedPot != null ? () => Navigator.pop(context, true) : null,
+              onPressed: selectedPot != null
+                  ? () => Navigator.pop(context, true)
+                  : null,
               child: const Text('Rempoter'),
             ),
           ],
@@ -916,14 +1145,18 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
         setState(() => _plant = updatedPlant);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${_plant!.nickname} rempotee dans un pot de ${selectedPot!.sizeDisplay}')),
+            SnackBar(
+              content: Text(
+                '${_plant!.nickname} rempotee dans un pot de ${selectedPot!.sizeDisplay}',
+              ),
+            ),
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
         }
       }
     }
@@ -957,17 +1190,19 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
           child: Stack(
             alignment: Alignment.center,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, color: color, size: 22),
-                  const SizedBox(width: 8),
+                  Icon(icon, color: color, size: 20),
+                  const SizedBox(height: 4),
                   Text(
                     label,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                     style: TextStyle(
                       color: color,
                       fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                      fontSize: 11,
                     ),
                   ),
                 ],
@@ -975,7 +1210,7 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
               if (badge != null)
                 Positioned(
                   top: 0,
-                  right: 20,
+                  right: 8,
                   child: Container(
                     width: 18,
                     height: 18,
@@ -1025,7 +1260,9 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
                 icon: Icons.health_and_safety,
                 title: 'Sante',
                 value: plant.healthStatus,
-                color: plant.hasHealthIssues ? Colors.orange : AppTheme.successColor,
+                color: plant.hasHealthIssues
+                    ? Colors.orange
+                    : AppTheme.successColor,
                 isWarning: plant.hasHealthIssues,
               ),
             ),
@@ -1047,7 +1284,9 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
       decoration: BoxDecoration(
         color: AppTheme.cardBg(context),
         borderRadius: BorderRadius.circular(16),
-        border: isWarning ? Border.all(color: color.withOpacity(0.5), width: 2) : null,
+        border: isWarning
+            ? Border.all(color: color.withOpacity(0.5), width: 2)
+            : null,
         boxShadow: [
           BoxShadow(
             color: AppTheme.shadowSoft(context),
@@ -1072,7 +1311,10 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
               const Spacer(),
               if (isWarning)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
@@ -1091,10 +1333,7 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
           const SizedBox(height: 12),
           Text(
             title,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.textGrey(context),
-            ),
+            style: TextStyle(fontSize: 12, color: AppTheme.textGrey(context)),
           ),
           const SizedBox(height: 4),
           Text(
@@ -1235,7 +1474,7 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle('Notes', Icons.note_outlined),
+        _buildSectionTitle('Notes personnelles', Icons.note_outlined),
         const SizedBox(height: 12),
         Container(
           width: double.infinity,
@@ -1248,7 +1487,11 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.lightbulb_outline, color: Colors.amber.shade700, size: 20),
+              Icon(
+                Icons.lightbulb_outline,
+                color: Colors.amber.shade700,
+                size: 20,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -1271,7 +1514,7 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle('Historique des soins', Icons.history),
+        _buildSectionTitle('Historique des soins et memos', Icons.history),
         const SizedBox(height: 12),
         if (plant.recentCareLogs.isEmpty)
           Container(
@@ -1290,7 +1533,11 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
             ),
             child: Column(
               children: [
-                Icon(Icons.spa_outlined, size: 48, color: AppTheme.divider(context)),
+                Icon(
+                  Icons.spa_outlined,
+                  size: 48,
+                  color: AppTheme.divider(context),
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'Aucun soin enregistre',
@@ -1327,7 +1574,8 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: plant.recentCareLogs.length,
-              separatorBuilder: (_, __) => Divider(height: 1, color: AppTheme.borderLight(context)),
+              separatorBuilder: (_, __) =>
+                  Divider(height: 1, color: AppTheme.borderLight(context)),
               itemBuilder: (context, index) {
                 final log = plant.recentCareLogs[index];
                 return Padding(
@@ -1342,7 +1590,10 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Center(
-                          child: Text(log.actionIcon, style: const TextStyle(fontSize: 20)),
+                          child: Text(
+                            log.actionIcon,
+                            style: const TextStyle(fontSize: 20),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1367,22 +1618,88 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
                                 color: AppTheme.textGrey(context),
                               ),
                             ),
+                            if (log.notes != null && log.notes!.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                log.notes!,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.textSecondaryC(context),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
-                      Text(
-                        log.timeAgo,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.textGrey(context),
-                        ),
-                      ),
+                      _buildCareLogTrailing(log),
                     ],
                   ),
                 );
               },
             ),
           ),
+        if (plant.recentCareLogs.length == 5) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => PlantCareHistoryPage(
+                      plantId: plant.id,
+                      plantName: plant.nickname,
+                      canManage: plant.canManage,
+                    ),
+                  ),
+                );
+                _loadData();
+              },
+              icon: const Icon(Icons.history, size: 18),
+              label: const Text('Voir tout l\'historique'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCareLogTrailing(CareLog log) {
+    final timeLabel = Text(
+      log.timeAgo,
+      style: TextStyle(fontSize: 12, color: AppTheme.textGrey(context)),
+    );
+
+    if (log.action != 'NOTE' || !(_plant?.canManage ?? false)) {
+      return timeLabel;
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        timeLabel,
+        const SizedBox(height: 4),
+        InkWell(
+          onTap: () => _deleteCareLog(log),
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Icon(
+              Icons.delete_outline,
+              size: 18,
+              color: Colors.red.shade400,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -1446,7 +1763,10 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red.shade600,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -1542,9 +1862,7 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
                 // Room
                 _buildSectionTitle('Emplacement', Icons.location_on_outlined),
                 const SizedBox(height: 12),
-                _buildCard([
-                  _buildRoomSelector(),
-                ]),
+                _buildCard([_buildRoomSelector()]),
 
                 const SizedBox(height: 24),
 
@@ -1587,8 +1905,26 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
 
                 const SizedBox(height: 24),
 
+                // Pot
+                _buildSectionTitle('Taille du pot', Icons.straighten),
+                const SizedBox(height: 12),
+                _buildCard([
+                  _buildEditTextField(
+                    controller: _potDiameterController,
+                    label: 'Diametre du pot (cm)',
+                    hint: 'Ex: 14',
+                    icon: Icons.straighten,
+                    suffixText: 'cm',
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                  ),
+                ]),
+
+                const SizedBox(height: 24),
+
                 // Notes
-                _buildSectionTitle('Notes', Icons.note_outlined),
+                _buildSectionTitle('Notes personnelles', Icons.note_outlined),
                 const SizedBox(height: 12),
                 _buildCard([
                   _buildEditTextField(
@@ -1636,6 +1972,8 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
     required String hint,
     required IconData icon,
     int maxLines = 1,
+    TextInputType? keyboardType,
+    String? suffixText,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1652,12 +1990,14 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
         TextFormField(
           controller: controller,
           maxLines: maxLines,
+          keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(color: AppTheme.textGrey(context)),
             prefixIcon: maxLines == 1
                 ? Icon(icon, color: AppTheme.primaryColor, size: 22)
                 : null,
+            suffixText: suffixText,
             filled: true,
             fillColor: AppTheme.inputFill(context),
             border: OutlineInputBorder(
@@ -1666,7 +2006,10 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+              borderSide: const BorderSide(
+                color: AppTheme.primaryColor,
+                width: 2,
+              ),
             ),
             contentPadding: EdgeInsets.symmetric(
               horizontal: 16,
@@ -1700,12 +2043,19 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
               onTap: () => setState(() => _selectedRoomId = room.id),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppTheme.primaryColor : AppTheme.inputFill(context),
+                  color: isSelected
+                      ? AppTheme.primaryColor
+                      : AppTheme.inputFill(context),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSelected ? AppTheme.primaryColor : AppTheme.divider(context),
+                    color: isSelected
+                        ? AppTheme.primaryColor
+                        : AppTheme.divider(context),
                     width: isSelected ? 2 : 1,
                   ),
                 ),
@@ -1717,8 +2067,12 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
                     Text(
                       room.name,
                       style: TextStyle(
-                        color: isSelected ? Colors.white : AppTheme.textGreyDark(context),
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        color: isSelected
+                            ? Colors.white
+                            : AppTheme.textGreyDark(context),
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                       ),
                     ),
                   ],
@@ -1732,9 +2086,24 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
   }
 
   final List<Map<String, dynamic>> _exposureOptions = [
-    {'value': 'SUN', 'label': 'Plein soleil', 'icon': Icons.wb_sunny, 'color': Colors.orange},
-    {'value': 'PARTIAL_SHADE', 'label': 'Mi-ombre', 'icon': Icons.wb_cloudy, 'color': Colors.blueGrey},
-    {'value': 'SHADE', 'label': 'Ombre', 'icon': Icons.nights_stay, 'color': Colors.indigo},
+    {
+      'value': 'SUN',
+      'label': 'Plein soleil',
+      'icon': Icons.wb_sunny,
+      'color': Colors.orange,
+    },
+    {
+      'value': 'PARTIAL_SHADE',
+      'label': 'Mi-ombre',
+      'icon': Icons.wb_cloudy,
+      'color': Colors.blueGrey,
+    },
+    {
+      'value': 'SHADE',
+      'label': 'Ombre',
+      'icon': Icons.nights_stay,
+      'color': Colors.indigo,
+    },
   ];
 
   Widget _buildExposureSelector() {
@@ -1768,7 +2137,9 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
                         : AppTheme.inputFill(context),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isSelected ? option['color'] as Color : AppTheme.divider(context),
+                      color: isSelected
+                          ? option['color'] as Color
+                          : AppTheme.divider(context),
                       width: isSelected ? 2 : 1,
                     ),
                   ),
@@ -1776,7 +2147,9 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
                     children: [
                       Icon(
                         option['icon'] as IconData,
-                        color: isSelected ? option['color'] as Color : AppTheme.textGrey(context),
+                        color: isSelected
+                            ? option['color'] as Color
+                            : AppTheme.textGrey(context),
                         size: 28,
                       ),
                       const SizedBox(height: 6),
@@ -1785,8 +2158,12 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 11,
-                          color: isSelected ? option['color'] as Color : AppTheme.textGrey(context),
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                          color: isSelected
+                              ? option['color'] as Color
+                              : AppTheme.textGrey(context),
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
                         ),
                       ),
                     ],
@@ -1854,14 +2231,21 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
             min: 1,
             max: 30,
             divisions: 29,
-            onChanged: (value) => setState(() => _wateringInterval = value.round()),
+            onChanged: (value) =>
+                setState(() => _wateringInterval = value.round()),
           ),
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Quotidien', style: TextStyle(fontSize: 11, color: AppTheme.textGrey(context))),
-            Text('Mensuel', style: TextStyle(fontSize: 11, color: AppTheme.textGrey(context))),
+            Text(
+              'Quotidien',
+              style: TextStyle(fontSize: 11, color: AppTheme.textGrey(context)),
+            ),
+            Text(
+              'Mensuel',
+              style: TextStyle(fontSize: 11, color: AppTheme.textGrey(context)),
+            ),
           ],
         ),
       ],
@@ -1871,8 +2255,18 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
   /// Format date to French format
   String _formatDate(DateTime date) {
     const months = [
-      'jan', 'fev', 'mar', 'avr', 'mai', 'juin',
-      'juil', 'aout', 'sep', 'oct', 'nov', 'dec'
+      'jan',
+      'fev',
+      'mar',
+      'avr',
+      'mai',
+      'juin',
+      'juil',
+      'aout',
+      'sep',
+      'oct',
+      'nov',
+      'dec',
     ];
     return '${date.day.toString().padLeft(2, '0')} ${months[date.month - 1]} ${date.year}';
   }
@@ -1884,8 +2278,14 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
     ValueChanged<bool> onChanged,
   ) {
     return SwitchListTile(
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
-      subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: AppTheme.textGrey(context))),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(fontSize: 12, color: AppTheme.textGrey(context)),
+      ),
       value: value,
       onChanged: onChanged,
       activeColor: AppTheme.primaryColor,

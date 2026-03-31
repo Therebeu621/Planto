@@ -69,8 +69,8 @@ public class VacationDelegationTest {
                 .path("inviteCode");
 
         if (inviteCode != null) {
-            // Try to join - may already be a member (409 is fine)
-            given()
+            // Try to join - may already be a member (400 is fine)
+            io.restassured.response.Response joinResp = given()
                     .header("Authorization", TestUtils.authHeader(user2Token))
                     .contentType(ContentType.JSON)
                     .body("""
@@ -80,6 +80,17 @@ public class VacationDelegationTest {
                             """.formatted(inviteCode))
                     .when()
                     .post("/houses/join");
+
+            // If join request was created (201), owner must accept it
+            if (joinResp.statusCode() == 201) {
+                String invitationId = joinResp.path("id");
+                given()
+                        .header("Authorization", TestUtils.authHeader(user1Token))
+                        .when()
+                        .put("/houses/invitations/" + invitationId + "/accept")
+                        .then()
+                        .statusCode(200);
+            }
 
             // Activate this house for user2
             given()

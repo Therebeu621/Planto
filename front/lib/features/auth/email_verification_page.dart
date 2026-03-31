@@ -5,7 +5,7 @@ import 'package:planto/core/theme/app_theme.dart';
 /// Email verification page shown after registration
 class EmailVerificationPage extends StatefulWidget {
   final String email;
-  final VoidCallback onVerified;
+  final void Function(BuildContext context) onVerified;
   final ProfileService? profileService;
 
   const EmailVerificationPage({
@@ -45,14 +45,6 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
 
     try {
       await _profileService.verifyEmail(_codeController.text.trim());
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _successMessage = 'Email verifie avec succes !';
-        });
-        await Future.delayed(const Duration(seconds: 1));
-        widget.onVerified();
-      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -60,6 +52,16 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
           _errorMessage = e.toString().replaceAll('Exception: ', '');
         });
       }
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        _successMessage = 'Email verifie avec succes !';
+      });
+      await Future.delayed(const Duration(seconds: 1));
+      if (mounted) widget.onVerified(context);
     }
   }
 
@@ -124,6 +126,16 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                         style: TextStyle(color: AppTheme.textSecondaryC(context)),
                         textAlign: TextAlign.center,
                       ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Vérifiez vos spams si vous ne le recevez pas dans 1 minute.',
+                        style: TextStyle(
+                          color: AppTheme.textSecondaryC(context),
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                       const SizedBox(height: 24),
                       TextField(
                         controller: _codeController,
@@ -183,7 +195,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                         child: const Text('Renvoyer le code'),
                       ),
                       TextButton(
-                        onPressed: () => widget.onVerified(),
+                        onPressed: () => widget.onVerified(context),
                         child: Text(
                           'Passer pour le moment',
                           style: TextStyle(color: AppTheme.textSecondaryC(context)),

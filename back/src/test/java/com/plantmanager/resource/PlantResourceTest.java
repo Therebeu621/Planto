@@ -71,6 +71,25 @@ public class PlantResourceTest {
     }
 
     @Test
+    void testCreatePlant_blankNickname_shouldReturn400WithCleanMessage() {
+        given()
+                .header("Authorization", TestUtils.authHeader(accessToken))
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                            "nickname": "",
+                            "customSpecies": "Monstera deliciosa",
+                            "roomId": "%s"
+                        }
+                        """.formatted(roomId))
+                .when()
+                .post("/plants")
+                .then()
+                .statusCode(400)
+                .body("message", equalTo("Le petit nom est requis"));
+    }
+
+    @Test
     void testCreatePlant_allOptionalFields_shouldReturn201() {
         given()
                 .header("Authorization", TestUtils.authHeader(accessToken))

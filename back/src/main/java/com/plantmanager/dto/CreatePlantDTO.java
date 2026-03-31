@@ -18,10 +18,10 @@ public record CreatePlantDTO(
         UUID roomId,
 
         /** Nickname for the plant (required) */
-        @NotBlank(message = "Nickname is required") @Size(max = 100, message = "Nickname must be at most 100 characters") String nickname,
+        @NotBlank(message = "Le petit nom est requis") @Size(max = 100, message = "Le petit nom doit contenir au maximum 100 caracteres") String nickname,
 
         /** Watering interval in days (default: 7) */
-        @Min(value = 1, message = "Watering interval must be at least 1 day") @Max(value = 365, message = "Watering interval must be at most 365 days") Integer wateringIntervalDays,
+        @Min(value = 1, message = "L'intervalle d'arrosage doit etre compris entre 1 et 365 jours") @Max(value = 365, message = "L'intervalle d'arrosage doit etre compris entre 1 et 365 jours") Integer wateringIntervalDays,
 
         /** Optional notes about the plant */
         String notes,
@@ -44,6 +44,8 @@ public record CreatePlantDTO(
         Boolean needsRepotting,
 
         /** Pot diameter in cm */
+        @DecimalMin(value = "0.1", message = "Le diametre du pot doit etre superieur a 0")
+        @DecimalMax(value = "200.0", message = "Le diametre du pot doit etre inferieur ou egal a 200 cm")
         BigDecimal potDiameterCm) {
     /**
      * Return watering interval or default.

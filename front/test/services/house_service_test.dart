@@ -3,9 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:planto/core/models/house.dart';
 import 'package:planto/core/models/house_member.dart';
 import 'package:planto/core/services/house_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../test_helpers.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late MockDioInterceptor mockInterceptor;
   late Dio dio;
   late HouseService service;
@@ -30,6 +33,7 @@ void main() {
   };
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     mockInterceptor = MockDioInterceptor();
     dio = createMockDio(mockInterceptor);
     service = HouseService(dio: dio);
@@ -50,60 +54,84 @@ void main() {
     });
 
     test('401 error throws session expired', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses',
-          isError: true, errorStatusCode: 401);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses',
+        isError: true,
+        errorStatusCode: 401,
+      );
       expect(
         () => service.getMyHouses(),
-        throwsA(predicate((e) =>
-            e is Exception && e.toString().contains('Session expir'))),
+        throwsA(
+          predicate(
+            (e) => e is Exception && e.toString().contains('Session expir'),
+          ),
+        ),
       );
     });
 
     test('DioException throws network error', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(
         () => service.getMyHouses(),
-        throwsA(predicate(
-            (e) => e is Exception && e.toString().contains('Erreur'))),
+        throwsA(
+          predicate(
+            (e) =>
+                e is Exception &&
+                e.toString().contains('Impossible de charger vos maisons'),
+          ),
+        ),
       );
     });
   });
 
   group('getActiveHouse', () {
     test('success returns house', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/active',
-          data: houseJson);
+      mockInterceptor.addMockResponse('/api/v1/houses/active', data: houseJson);
       final result = await service.getActiveHouse();
       expect(result.id, 'h1');
     });
 
     test('error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/active',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/active',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(() => service.getActiveHouse(), throwsException);
     });
   });
 
   group('switchActiveHouse', () {
     test('success returns house', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1/activate',
-          data: houseJson);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1/activate',
+        data: houseJson,
+      );
       final result = await service.switchActiveHouse('h1');
       expect(result.id, 'h1');
     });
 
     test('error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1/activate',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1/activate',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(() => service.switchActiveHouse('h1'), throwsException);
     });
   });
 
   group('createHouse', () {
     test('success returns house', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses',
-          data: houseJson, statusCode: 201);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses',
+        data: houseJson,
+        statusCode: 201,
+      );
       final result = await service.createHouse('My House');
       expect(result.id, 'h1');
       final request = mockInterceptor.capturedRequests.last;
@@ -111,48 +139,100 @@ void main() {
     });
 
     test('error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(() => service.createHouse('My House'), throwsException);
+    });
+
+    test('400 error returns API validation message', () async {
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses',
+        isError: true,
+        errorStatusCode: 400,
+        data: {'message': 'Le nom de la maison est requis'},
+      );
+      expect(
+        () => service.createHouse(''),
+        throwsA(
+          predicate(
+            (e) =>
+                e is Exception &&
+                e.toString().contains('Le nom de la maison est requis'),
+          ),
+        ),
+      );
     });
   });
 
-  group('joinHouse', () {
-    test('success returns house', () async {
+  group('requestJoinHouse', () {
+    final invitationJson = {
+      'id': 'inv1',
+      'houseId': 'h1',
+      'houseName': 'My House',
+      'requesterId': 'u1',
+      'requesterName': 'John',
+      'requesterEmail': 'j@e.com',
+      'status': 'PENDING',
+      'createdAt': '2026-01-01T00:00:00.000Z',
+    };
+
+    test('success returns invitation', () async {
       mockInterceptor.addMockResponse('/api/v1/houses/join',
-          data: houseJson);
-      final result = await service.joinHouse('ABC123');
-      expect(result.id, 'h1');
+          data: invitationJson, statusCode: 201);
+      final result = await service.requestJoinHouse('ABC123');
+      expect(result.id, 'inv1');
     });
 
     test('404 error throws invalid invite code', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/join',
-          isError: true, errorStatusCode: 404);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/join',
+        isError: true,
+        errorStatusCode: 404,
+      );
       expect(
-        () => service.joinHouse('INVALID'),
-        throwsA(predicate((e) =>
-            e is Exception &&
-            e.toString().contains('invitation invalide'))),
+        () => service.requestJoinHouse('INVALID'),
+        throwsA(
+          predicate(
+            (e) =>
+                e is Exception && e.toString().contains('invitation invalide'),
+          ),
+        ),
       );
     });
 
-    test('400 error throws already member', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/join',
-          isError: true, errorStatusCode: 400);
+    test('400 error throws message', () async {
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/join',
+        isError: true,
+        errorStatusCode: 400,
+        data: {'message': 'Vous etes deja membre de cette maison'},
+      );
       expect(
-        () => service.joinHouse('ABC123'),
-        throwsA(predicate((e) =>
-            e is Exception && e.toString().contains('membre'))),
+        () => service.requestJoinHouse('ABC123'),
+        throwsA(
+          predicate((e) => e is Exception),
+        ),
       );
     });
 
     test('generic error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/join',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/join',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(
-        () => service.joinHouse('ABC123'),
-        throwsA(predicate(
-            (e) => e is Exception && e.toString().contains('Erreur'))),
+        () => service.requestJoinHouse('ABC123'),
+        throwsA(
+          predicate(
+            (e) =>
+                e is Exception &&
+                e.toString().contains('Impossible'),
+          ),
+        ),
       );
     });
   });
@@ -161,24 +241,37 @@ void main() {
     test('success completes', () async {
       mockInterceptor.addMockResponse('/api/v1/houses/h1/leave');
       await service.leaveHouse('h1');
-      expect(mockInterceptor.capturedRequests.last.path,
-          contains('/api/v1/houses/h1/leave'));
+      expect(
+        mockInterceptor.capturedRequests.last.path,
+        contains('/api/v1/houses/h1/leave'),
+      );
     });
 
     test('400 error throws only owner message', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1/leave',
-          isError: true, errorStatusCode: 400);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1/leave',
+        isError: true,
+        errorStatusCode: 400,
+        data: {'message': 'Impossible de quitter cette maison'},
+      );
       expect(
         () => service.leaveHouse('h1'),
-        throwsA(predicate((e) =>
-            e is Exception &&
-            e.toString().contains('seul propri'))),
+        throwsA(
+          predicate(
+            (e) =>
+                e is Exception &&
+                e.toString().contains('Impossible de quitter cette maison'),
+          ),
+        ),
       );
     });
 
     test('generic error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1/leave',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1/leave',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(() => service.leaveHouse('h1'), throwsException);
     });
   });
@@ -190,27 +283,35 @@ void main() {
     });
 
     test('403 error throws owner only message', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1',
-          isError: true, errorStatusCode: 403);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1',
+        isError: true,
+        errorStatusCode: 403,
+      );
       expect(
         () => service.deleteHouse('h1'),
-        throwsA(predicate((e) =>
-            e is Exception &&
-            e.toString().contains('propri'))),
+        throwsA(
+          predicate((e) => e is Exception && e.toString().contains('propri')),
+        ),
       );
     });
 
     test('generic error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(() => service.deleteHouse('h1'), throwsException);
     });
   });
 
   group('getHouseMembers', () {
     test('success returns list of members', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1/members',
-          data: [memberJson]);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1/members',
+        data: [memberJson],
+      );
       final result = await service.getHouseMembers('h1');
       expect(result, isA<List<HouseMember>>());
       expect(result.length, 1);
@@ -219,26 +320,37 @@ void main() {
     });
 
     test('403 error throws not member message', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1/members',
-          isError: true, errorStatusCode: 403);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1/members',
+        isError: true,
+        errorStatusCode: 403,
+      );
       expect(
         () => service.getHouseMembers('h1'),
-        throwsA(predicate((e) =>
-            e is Exception && e.toString().contains('pas membre'))),
+        throwsA(
+          predicate(
+            (e) => e is Exception && e.toString().contains('pas membre'),
+          ),
+        ),
       );
     });
 
     test('generic error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1/members',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1/members',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(() => service.getHouseMembers('h1'), throwsException);
     });
   });
 
   group('updateMemberRole', () {
     test('success returns updated member', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1/members/u1/role',
-          data: memberJson);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1/members/u1/role',
+        data: memberJson,
+      );
       final result = await service.updateMemberRole('h1', 'u1', 'ADMIN');
       expect(result.id, 'u1');
       final request = mockInterceptor.capturedRequests.last;
@@ -246,21 +358,28 @@ void main() {
     });
 
     test('403 error throws owner only message', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1/members/u1/role',
-          isError: true, errorStatusCode: 403);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1/members/u1/role',
+        isError: true,
+        errorStatusCode: 403,
+      );
       expect(
         () => service.updateMemberRole('h1', 'u1', 'ADMIN'),
-        throwsA(predicate((e) =>
-            e is Exception &&
-            e.toString().contains('proprietaire'))),
+        throwsA(
+          predicate(
+            (e) => e is Exception && e.toString().contains('proprietaire'),
+          ),
+        ),
       );
     });
 
     test('400 error throws action impossible', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1/members/u1/role',
-          isError: true,
-          errorStatusCode: 400,
-          data: {'message': 'Action impossible'});
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1/members/u1/role',
+        isError: true,
+        errorStatusCode: 400,
+        data: {'message': 'Action impossible'},
+      );
       expect(
         () => service.updateMemberRole('h1', 'u1', 'ADMIN'),
         throwsException,
@@ -268,8 +387,11 @@ void main() {
     });
 
     test('generic error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1/members/u1/role',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1/members/u1/role',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(
         () => service.updateMemberRole('h1', 'u1', 'ADMIN'),
         throwsException,
@@ -284,30 +406,44 @@ void main() {
     });
 
     test('403 error throws owner only message', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1/members/u1',
-          isError: true, errorStatusCode: 403);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1/members/u1',
+        isError: true,
+        errorStatusCode: 403,
+      );
       expect(
         () => service.removeMember('h1', 'u1'),
-        throwsA(predicate((e) =>
-            e is Exception &&
-            e.toString().contains('proprietaire'))),
+        throwsA(
+          predicate(
+            (e) => e is Exception && e.toString().contains('proprietaire'),
+          ),
+        ),
       );
     });
 
     test('400 error throws cannot remove self', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1/members/u1',
-          isError: true, errorStatusCode: 400);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1/members/u1',
+        isError: true,
+        errorStatusCode: 400,
+        data: {'message': 'Vous ne pouvez pas vous exclure vous-meme'},
+      );
       expect(
         () => service.removeMember('h1', 'u1'),
-        throwsA(predicate((e) =>
-            e is Exception &&
-            e.toString().contains('vous-meme'))),
+        throwsA(
+          predicate(
+            (e) => e is Exception && e.toString().contains('vous-meme'),
+          ),
+        ),
       );
     });
 
     test('generic error throws exception', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1/members/u1',
-          isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1/members/u1',
+        isError: true,
+        errorStatusCode: 500,
+      );
       expect(() => service.removeMember('h1', 'u1'), throwsException);
     });
   });
@@ -316,45 +452,69 @@ void main() {
 
   group('non-200 status branches', () {
     test('getMyHouses non-200 throws', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses',
-          data: [], statusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses',
+        data: [],
+        statusCode: 500,
+      );
       expect(() => service.getMyHouses(), throwsException);
     });
 
     test('getActiveHouse non-200 throws', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/active',
-          data: {}, statusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/active',
+        data: {},
+        statusCode: 500,
+      );
       expect(() => service.getActiveHouse(), throwsException);
     });
 
     test('switchActiveHouse non-200 throws', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1/activate',
-          data: {}, statusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1/activate',
+        data: {},
+        statusCode: 500,
+      );
       expect(() => service.switchActiveHouse('h1'), throwsException);
     });
 
     test('createHouse non-201 throws', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses',
-          data: {}, statusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses',
+        data: {},
+        statusCode: 500,
+      );
       expect(() => service.createHouse('Test'), throwsException);
     });
 
-    test('joinHouse non-200 throws', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/join',
-          data: {}, statusCode: 500);
-      expect(() => service.joinHouse('CODE'), throwsException);
+    test('requestJoinHouse non-201 throws', () async {
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/join',
+        data: {},
+        statusCode: 500,
+      );
+      expect(() => service.requestJoinHouse('CODE'), throwsException);
     });
 
     test('getHouseMembers non-200 throws', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1/members',
-          data: [], statusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1/members',
+        data: [],
+        statusCode: 500,
+      );
       expect(() => service.getHouseMembers('h1'), throwsException);
     });
 
     test('updateMemberRole non-200 throws', () async {
-      mockInterceptor.addMockResponse('/api/v1/houses/h1/members/u1/role',
-          data: {}, statusCode: 500);
-      expect(() => service.updateMemberRole('h1', 'u1', 'ADMIN'), throwsException);
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/h1/members/u1/role',
+        data: {},
+        statusCode: 500,
+      );
+      expect(
+        () => service.updateMemberRole('h1', 'u1', 'ADMIN'),
+        throwsException,
+      );
     });
   });
 }

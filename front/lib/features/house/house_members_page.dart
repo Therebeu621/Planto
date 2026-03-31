@@ -500,7 +500,7 @@ class _HouseMembersPageState extends State<HouseMembersPage> {
                       children: [
                         const Icon(Icons.swap_vert, size: 20, color: Colors.blue),
                         const SizedBox(width: 12),
-                        const Text('Changer le role'),
+                        const Flexible(child: Text('Changer le role')),
                       ],
                     ),
                   ),
@@ -510,7 +510,7 @@ class _HouseMembersPageState extends State<HouseMembersPage> {
                       children: [
                         const Icon(Icons.person_remove, size: 20, color: Colors.red),
                         const SizedBox(width: 12),
-                        const Text('Exclure', style: TextStyle(color: Colors.red)),
+                        const Flexible(child: Text('Exclure', style: TextStyle(color: Colors.red))),
                       ],
                     ),
                   ),

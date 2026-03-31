@@ -11,6 +11,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint('FCM background message: ${message.messageId}');
 }
 
+/// Callback type for FCM data messages
+typedef FcmMessageCallback = void Function(Map<String, dynamic> data);
+
 /// Service for managing Firebase Cloud Messaging (push notifications).
 /// Handles token registration, foreground/background messages.
 class FcmService {
@@ -18,16 +21,30 @@ class FcmService {
   factory FcmService() => _instance;
   FcmService._internal();
 
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  FirebaseMessaging? _messaging;
+  FirebaseMessaging get messaging => _messaging ??= FirebaseMessaging.instance;
   String? _currentToken;
   bool _isInitialized = false;
+
+  /// Listeners that get called when a foreground FCM message arrives
+  final List<FcmMessageCallback> _onMessageListeners = [];
+
+  /// Register a listener for foreground FCM messages
+  void addOnMessageListener(FcmMessageCallback listener) {
+    _onMessageListeners.add(listener);
+  }
+
+  /// Remove a listener
+  void removeOnMessageListener(FcmMessageCallback listener) {
+    _onMessageListeners.remove(listener);
+  }
 
   /// Initialize FCM: request permissions, get token, listen for messages
   Future<void> init() async {
     if (_isInitialized) return;
 
     // Request permission
-    final settings = await _messaging.requestPermission(
+    final settings = await messaging.requestPermission(
       alert: true,
       badge: true,
       sound: true,
@@ -35,11 +52,11 @@ class FcmService {
     debugPrint('FCM permission: ${settings.authorizationStatus}');
 
     // Get FCM token
-    _currentToken = await _messaging.getToken();
+    _currentToken = await messaging.getToken();
     debugPrint('FCM token: $_currentToken');
 
     // Listen for token refresh
-    _messaging.onTokenRefresh.listen((newToken) {
+    messaging.onTokenRefresh.listen((newToken) {
       debugPrint('FCM token refreshed: $newToken');
       _currentToken = newToken;
       _registerTokenWithBackend(newToken);
@@ -58,7 +75,7 @@ class FcmService {
   /// Register the current FCM token with the backend
   Future<void> registerToken() async {
     if (_currentToken == null) {
-      _currentToken = await _messaging.getToken();
+      _currentToken = await messaging.getToken();
     }
     if (_currentToken != null) {
       await _registerTokenWithBackend(_currentToken!);
@@ -95,9 +112,14 @@ class FcmService {
     }
   }
 
-  /// Handle foreground messages: show a local notification
+  /// Handle foreground messages: show a local notification + notify listeners
   void _handleForegroundMessage(RemoteMessage message) {
     debugPrint('FCM foreground message: ${message.notification?.title}');
+
+    // Notify all registered listeners (for auto-refresh)
+    for (final listener in _onMessageListeners) {
+      listener(message.data);
+    }
 
     final notification = message.notification;
     if (notification == null) return;

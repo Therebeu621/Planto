@@ -7,7 +7,7 @@
 #
 
 BASE_URL="${1:-http://localhost:8080/api/v1}"
-API_KEY="${2:-test-mcp-key}"
+API_KEY="${2:-mcp-plant-secret-key}"
 PASS=0
 FAIL=0
 TOTAL=0

@@ -1,6 +1,8 @@
 package com.plantmanager.resource;
 
 import com.plantmanager.dto.*;
+import com.plantmanager.entity.PlantPhotoEntity;
+import com.plantmanager.entity.UserEntity;
 import com.plantmanager.entity.UserPlantEntity;
 import com.plantmanager.entity.enums.HealthStatus;
 import com.plantmanager.service.FileStorageService;
@@ -210,6 +212,22 @@ public class PlantResource {
         return Response.status(Response.Status.CREATED).entity(log).build();
     }
 
+    @DELETE
+    @Path("/{id}/care-logs/{logId}")
+    @RolesAllowed({ "MEMBER", "OWNER" })
+    @Operation(summary = "Supprimer une note d'historique", description = "Supprime un care log de type NOTE pour la plante")
+    @APIResponses({
+            @APIResponse(responseCode = "204", description = "Note supprimee"),
+            @APIResponse(responseCode = "404", description = "Note ou plante non trouvee"),
+            @APIResponse(responseCode = "403", description = "Suppression non autorisee")
+    })
+    public Response deleteCareLog(
+            @Parameter(description = "ID de la plante", required = true) @PathParam("id") UUID id,
+            @Parameter(description = "ID du care log", required = true) @PathParam("logId") UUID logId) {
+        plantService.deleteCareLog(getCurrentUserId(), id, logId);
+        return Response.noContent().build();
+    }
+
     // ==================== PHOTO ====================
 
     @POST
@@ -234,15 +252,11 @@ public class PlantResource {
         }
 
         try (FileInputStream fis = new FileInputStream(file.uploadedFile().toFile())) {
-            // Verify plant exists and belongs to user (throws NotFoundException if not found)
-            UserPlantEntity plant = plantService.getPlantById(getCurrentUserId(), id);
+            UUID userId = getCurrentUserId();
+            UserPlantEntity plant = plantService.getPlantById(userId, id);
+            UserEntity user = UserEntity.findById(userId);
+            String previousPhotoPath = plant.photoPath;
 
-            // Delete old photo if exists
-            if (plant.photoPath != null) {
-                fileStorageService.deleteFile(plant.photoPath);
-            }
-
-            // Store new photo
             String relativePath = fileStorageService.storePlantPhoto(
                     id,
                     fis,
@@ -250,9 +264,34 @@ public class PlantResource {
                     file.contentType()
             );
 
-            // Update plant
+            PlantPhotoEntity primaryPhoto = PlantPhotoEntity.findPrimary(id);
+            PlantPhotoEntity legacyPhoto = previousPhotoPath != null
+                    ? PlantPhotoEntity.findByPlantAndPath(id, previousPhotoPath)
+                    : null;
+            PlantPhotoEntity photoToSync = primaryPhoto != null ? primaryPhoto : legacyPhoto;
+
+            if (photoToSync == null) {
+                PlantPhotoEntity newPrimaryPhoto = new PlantPhotoEntity();
+                newPrimaryPhoto.plant = plant;
+                newPrimaryPhoto.uploadedBy = user;
+                newPrimaryPhoto.photoPath = relativePath;
+                newPrimaryPhoto.isPrimary = true;
+                newPrimaryPhoto.persist();
+            } else {
+                photoToSync.photoPath = relativePath;
+                photoToSync.uploadedBy = user;
+                photoToSync.isPrimary = true;
+            }
+
             plant.photoPath = relativePath;
             plant.persist();
+
+            if (previousPhotoPath != null && !previousPhotoPath.equals(relativePath)) {
+                boolean stillReferenced = PlantPhotoEntity.findByPlantAndPath(id, previousPhotoPath) != null;
+                if (!stillReferenced) {
+                    fileStorageService.deleteFile(previousPhotoPath);
+                }
+            }
 
             return Response.ok(PlantResponseDTO.from(plant)).build();
 
@@ -279,22 +318,32 @@ public class PlantResource {
     })
     public Response deletePlantPhoto(
             @Parameter(description = "ID de la plante", required = true) @PathParam("id") UUID id) {
-        // Verify plant exists and belongs to user (throws NotFoundException if not found)
         UserPlantEntity plant = plantService.getPlantById(getCurrentUserId(), id);
 
-        // Delete photo file if exists
         if (plant.photoPath != null) {
-            fileStorageService.deleteFile(plant.photoPath);
-            plant.photoPath = null;
+            String currentPhotoPath = plant.photoPath;
+            PlantPhotoEntity galleryPhoto = PlantPhotoEntity.findByPlantAndPath(id, currentPhotoPath);
+
+            if (galleryPhoto != null) {
+                galleryPhoto.delete();
+
+                List<PlantPhotoEntity> remainingPhotos = PlantPhotoEntity.findByPlant(id);
+                if (!remainingPhotos.isEmpty()) {
+                    PlantPhotoEntity nextPrimary = remainingPhotos.get(0);
+                    nextPrimary.isPrimary = true;
+                    plant.photoPath = nextPrimary.photoPath;
+                } else {
+                    plant.photoPath = null;
+                }
+            } else {
+                plant.photoPath = null;
+            }
+
             plant.persist();
+            fileStorageService.deleteFile(currentPhotoPath);
         }
 
         return Response.ok(PlantResponseDTO.from(plant)).build();
     }
 
-    /**
-     * Simple error response record.
-     */
-    public record ErrorResponse(String message) {
-    }
 }

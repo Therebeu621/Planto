@@ -18,10 +18,14 @@ void main() {
 
   final today = DateTime.now();
   final todayStr = today.toIso8601String().split('T')[0];
-  final tomorrowStr =
-      today.add(const Duration(days: 1)).toIso8601String().split('T')[0];
-  final yesterdayStr =
-      today.subtract(const Duration(days: 1)).toIso8601String().split('T')[0];
+  final tomorrowStr = today
+      .add(const Duration(days: 1))
+      .toIso8601String()
+      .split('T')[0];
+  final yesterdayStr = today
+      .subtract(const Duration(days: 1))
+      .toIso8601String()
+      .split('T')[0];
 
   setUpAll(() async {
     await initializeDateFormatting('fr_FR', null);
@@ -41,35 +45,41 @@ void main() {
     bool needsWatering = false,
     String? speciesName,
   }) {
-    mockInterceptor.addMockResponse('/api/v1/rooms', data: [
-      {
-        'id': 'r1',
-        'name': 'Salon',
-        'type': 'LIVING_ROOM',
-        'plantCount': 1,
-        'plants': [
-          {
-            'id': 'p1',
-            'nickname': 'Ficus',
-            'speciesCommonName': speciesName ?? 'Ficus elastica',
-            'needsWatering': needsWatering,
-            'nextWateringDate': nextWatering,
-          },
-        ],
-      },
-    ]);
+    mockInterceptor.addMockResponse(
+      '/api/v1/rooms',
+      data: [
+        {
+          'id': 'r1',
+          'name': 'Salon',
+          'type': 'LIVING_ROOM',
+          'plantCount': 1,
+          'plants': [
+            {
+              'id': 'p1',
+              'nickname': 'Ficus',
+              'speciesCommonName': speciesName ?? 'Ficus elastica',
+              'needsWatering': needsWatering,
+              'nextWateringDate': nextWatering,
+            },
+          ],
+        },
+      ],
+    );
   }
 
   void addEmptyRooms() {
-    mockInterceptor.addMockResponse('/api/v1/rooms', data: [
-      {
-        'id': 'r1',
-        'name': 'Salon',
-        'type': 'LIVING_ROOM',
-        'plantCount': 0,
-        'plants': <Map<String, dynamic>>[],
-      },
-    ]);
+    mockInterceptor.addMockResponse(
+      '/api/v1/rooms',
+      data: [
+        {
+          'id': 'r1',
+          'name': 'Salon',
+          'type': 'LIVING_ROOM',
+          'plantCount': 0,
+          'plants': <Map<String, dynamic>>[],
+        },
+      ],
+    );
   }
 
   Widget buildPage() {
@@ -115,23 +125,26 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('shows "Aucun arrosage prevu ce jour" when no plants on selected day',
-        (tester) async {
-      setupPageTest(tester);
-      addTearDown(() => tester.view.resetPhysicalSize());
-      final origOnError = suppressOverflowErrors();
+    testWidgets(
+      'shows "Aucun arrosage prevu ce jour" when no plants on selected day',
+      (tester) async {
+        setupPageTest(tester);
+        addTearDown(() => tester.view.resetPhysicalSize());
+        final origOnError = suppressOverflowErrors();
 
-      addEmptyRooms();
-      await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+        addEmptyRooms();
+        await tester.pumpWidget(buildPage());
+        await tester.pumpAndSettle();
 
-      expect(find.text('Aucun arrosage prevu ce jour'), findsOneWidget);
+        expect(find.text('Aucun arrosage prevu ce jour'), findsOneWidget);
 
-      FlutterError.onError = origOnError;
-    });
+        FlutterError.onError = origOnError;
+      },
+    );
 
-    testWidgets('shows plants needing water today with today watering date',
-        (tester) async {
+    testWidgets('shows plants needing water today with today watering date', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -160,7 +173,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('shows urgent watering section with today plants', (tester) async {
+    testWidgets('shows urgent watering section with today plants', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -175,8 +190,9 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('shows upcoming section with next 7 days waterings',
-        (tester) async {
+    testWidgets('shows upcoming section with next 7 days waterings', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -190,29 +206,33 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('shows "Aucun arrosage prevu cette semaine" when no upcoming',
-        (tester) async {
+    testWidgets('shows "Aucun arrosage prevu cette semaine" when no upcoming', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
       // Plant with watering date far in the future
-      mockInterceptor.addMockResponse('/api/v1/rooms', data: [
-        {
-          'id': 'r1',
-          'name': 'Salon',
-          'type': 'LIVING_ROOM',
-          'plantCount': 1,
-          'plants': [
-            {
-              'id': 'p1',
-              'nickname': 'Cactus',
-              'needsWatering': false,
-              'nextWateringDate': '2030-01-01',
-            },
-          ],
-        },
-      ]);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: [
+          {
+            'id': 'r1',
+            'name': 'Salon',
+            'type': 'LIVING_ROOM',
+            'plantCount': 1,
+            'plants': [
+              {
+                'id': 'p1',
+                'nickname': 'Cactus',
+                'needsWatering': false,
+                'nextWateringDate': '2030-01-01',
+              },
+            ],
+          },
+        ],
+      );
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
@@ -226,8 +246,12 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      mockInterceptor.addMockResponse('/api/v1/rooms',
-          data: {}, isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: {},
+        isError: true,
+        errorStatusCode: 500,
+      );
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
@@ -242,8 +266,12 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      mockInterceptor.addMockResponse('/api/v1/rooms',
-          data: {}, isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: {},
+        isError: true,
+        errorStatusCode: 500,
+      );
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
@@ -266,21 +294,27 @@ void main() {
 
       addRoomsWithPlants(nextWatering: todayStr, needsWatering: true);
       // Mock water plant
-      mockInterceptor.addMockResponse('/api/v1/plants/p1/water', data: {
-        'id': 'p1',
-        'nickname': 'Ficus',
-        'needsWatering': false,
-        'nextWateringDate': tomorrowStr,
-      });
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1/water',
+        data: {
+          'id': 'p1',
+          'nickname': 'Ficus',
+          'needsWatering': false,
+          'nextWateringDate': tomorrowStr,
+        },
+      );
       // Mock active house
-      mockInterceptor.addMockResponse('/api/v1/houses/active', data: {
-        'id': 'h1',
-        'name': 'Maison',
-        'inviteCode': 'ABC',
-        'memberCount': 1,
-        'roomCount': 1,
-        'isActive': true,
-      });
+      mockInterceptor.addMockResponse(
+        '/api/v1/houses/active',
+        data: {
+          'id': 'h1',
+          'name': 'Maison',
+          'inviteCode': 'ABC',
+          'memberCount': 1,
+          'roomCount': 1,
+          'isActive': true,
+        },
+      );
 
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
@@ -303,8 +337,12 @@ void main() {
       final origOnError = suppressOverflowErrors();
 
       addRoomsWithPlants(nextWatering: todayStr, needsWatering: true);
-      mockInterceptor.addMockResponse('/api/v1/plants/p1/water',
-          data: {}, isError: true, errorStatusCode: 500);
+      mockInterceptor.addMockResponse(
+        '/api/v1/plants/p1/water',
+        data: {},
+        isError: true,
+        errorStatusCode: 500,
+      );
 
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
@@ -313,13 +351,17 @@ void main() {
       await tester.tap(waterButton.first);
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Erreur'), findsWidgets);
+      expect(
+        find.textContaining("Impossible d'arroser la plante"),
+        findsWidgets,
+      );
 
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('shows overdue plant with "En retard" for past watering',
-        (tester) async {
+    testWidgets('shows overdue plant with "En retard" for past watering', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
@@ -335,28 +377,33 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('plant with no species shows "Espece inconnue"', (tester) async {
+    testWidgets('plant with no species shows "Espece inconnue"', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      mockInterceptor.addMockResponse('/api/v1/rooms', data: [
-        {
-          'id': 'r1',
-          'name': 'Salon',
-          'type': 'LIVING_ROOM',
-          'plantCount': 1,
-          'plants': [
-            {
-              'id': 'p1',
-              'nickname': 'Plante',
-              'speciesCommonName': null,
-              'needsWatering': true,
-              'nextWateringDate': todayStr,
-            },
-          ],
-        },
-      ]);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: [
+          {
+            'id': 'r1',
+            'name': 'Salon',
+            'type': 'LIVING_ROOM',
+            'plantCount': 1,
+            'plants': [
+              {
+                'id': 'p1',
+                'nickname': 'Plante',
+                'speciesCommonName': null,
+                'needsWatering': true,
+                'nextWateringDate': todayStr,
+              },
+            ],
+          },
+        ],
+      );
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
@@ -384,28 +431,31 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      mockInterceptor.addMockResponse('/api/v1/rooms', data: [
-        {
-          'id': 'r1',
-          'name': 'Salon',
-          'type': 'LIVING_ROOM',
-          'plantCount': 2,
-          'plants': [
-            {
-              'id': 'p1',
-              'nickname': 'Ficus',
-              'needsWatering': true,
-              'nextWateringDate': todayStr,
-            },
-            {
-              'id': 'p2',
-              'nickname': 'Cactus',
-              'needsWatering': true,
-              'nextWateringDate': todayStr,
-            },
-          ],
-        },
-      ]);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: [
+          {
+            'id': 'r1',
+            'name': 'Salon',
+            'type': 'LIVING_ROOM',
+            'plantCount': 2,
+            'plants': [
+              {
+                'id': 'p1',
+                'nickname': 'Ficus',
+                'needsWatering': true,
+                'nextWateringDate': todayStr,
+              },
+              {
+                'id': 'p2',
+                'nickname': 'Cactus',
+                'needsWatering': true,
+                'nextWateringDate': todayStr,
+              },
+            ],
+          },
+        ],
+      );
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
@@ -414,27 +464,32 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('plant with empty nickname shows P as avatar initial', (tester) async {
+    testWidgets('plant with empty nickname shows P as avatar initial', (
+      tester,
+    ) async {
       setupPageTest(tester);
       addTearDown(() => tester.view.resetPhysicalSize());
       final origOnError = suppressOverflowErrors();
 
-      mockInterceptor.addMockResponse('/api/v1/rooms', data: [
-        {
-          'id': 'r1',
-          'name': 'Salon',
-          'type': 'LIVING_ROOM',
-          'plantCount': 1,
-          'plants': [
-            {
-              'id': 'p1',
-              'nickname': '',
-              'needsWatering': true,
-              'nextWateringDate': todayStr,
-            },
-          ],
-        },
-      ]);
+      mockInterceptor.addMockResponse(
+        '/api/v1/rooms',
+        data: [
+          {
+            'id': 'r1',
+            'name': 'Salon',
+            'type': 'LIVING_ROOM',
+            'plantCount': 1,
+            'plants': [
+              {
+                'id': 'p1',
+                'nickname': '',
+                'needsWatering': true,
+                'nextWateringDate': todayStr,
+              },
+            ],
+          },
+        ],
+      );
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
@@ -443,34 +498,39 @@ void main() {
       FlutterError.onError = origOnError;
     });
 
-    testWidgets('plant with null nextWateringDate and needsWatering shows in urgent',
-        (tester) async {
-      setupPageTest(tester);
-      addTearDown(() => tester.view.resetPhysicalSize());
-      final origOnError = suppressOverflowErrors();
+    testWidgets(
+      'plant with null nextWateringDate and needsWatering shows in urgent',
+      (tester) async {
+        setupPageTest(tester);
+        addTearDown(() => tester.view.resetPhysicalSize());
+        final origOnError = suppressOverflowErrors();
 
-      mockInterceptor.addMockResponse('/api/v1/rooms', data: [
-        {
-          'id': 'r1',
-          'name': 'Salon',
-          'type': 'LIVING_ROOM',
-          'plantCount': 1,
-          'plants': [
+        mockInterceptor.addMockResponse(
+          '/api/v1/rooms',
+          data: [
             {
-              'id': 'p1',
-              'nickname': 'TestPlant',
-              'needsWatering': true,
-              'nextWateringDate': null,
+              'id': 'r1',
+              'name': 'Salon',
+              'type': 'LIVING_ROOM',
+              'plantCount': 1,
+              'plants': [
+                {
+                  'id': 'p1',
+                  'nickname': 'TestPlant',
+                  'needsWatering': true,
+                  'nextWateringDate': null,
+                },
+              ],
             },
           ],
-        },
-      ]);
-      await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpWidget(buildPage());
+        await tester.pumpAndSettle();
 
-      expect(find.text('A arroser maintenant'), findsOneWidget);
+        expect(find.text('A arroser maintenant'), findsOneWidget);
 
-      FlutterError.onError = origOnError;
-    });
+        FlutterError.onError = origOnError;
+      },
+    );
   });
 }

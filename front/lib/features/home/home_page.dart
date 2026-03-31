@@ -4,6 +4,7 @@ import 'package:planto/core/models/house.dart';
 import 'package:planto/core/models/room.dart';
 import 'package:planto/core/services/auth_service.dart';
 import 'package:planto/core/services/house_service.dart';
+import 'package:planto/core/services/fcm_service.dart';
 import 'package:planto/core/services/notification_service.dart';
 import 'package:planto/core/services/room_service.dart';
 import 'package:planto/core/services/plant_service.dart';
@@ -11,6 +12,7 @@ import 'package:planto/core/services/profile_service.dart';
 import 'package:planto/core/models/user_profile.dart';
 import 'package:planto/core/constants/app_constants.dart';
 import 'package:planto/core/theme/app_theme.dart';
+import 'package:planto/core/widgets/offline_banner.dart';
 import 'package:planto/core/widgets/plant_card.dart';
 import 'package:planto/features/auth/login_page.dart';
 import 'package:planto/features/plant/plant_details_page.dart';
@@ -21,8 +23,9 @@ import 'package:planto/features/house/house_page.dart';
 import 'package:planto/features/pot/pot_stock_page.dart';
 import 'package:planto/features/profile/profile_page.dart';
 import 'package:planto/features/garden/garden_page.dart';
-import 'package:planto/features/iot/iot_sensors_page.dart';
 import 'package:planto/features/stats/stats_page.dart';
+import 'package:planto/features/chat/chat_page.dart';
+import 'package:planto/features/notifications/notifications_page.dart';
 import 'package:planto/features/room/add_room_dialog.dart';
 
 /// Home page showing rooms with plants
@@ -34,6 +37,7 @@ class HomePage extends StatefulWidget {
   final HouseService? houseService;
   final ProfileService? profileService;
   final NotificationService? notificationService;
+  final FcmService? fcmService;
 
   const HomePage({
     super.key,
@@ -44,6 +48,7 @@ class HomePage extends StatefulWidget {
     this.houseService,
     this.profileService,
     this.notificationService,
+    this.fcmService,
   });
 
   @override
@@ -55,32 +60,51 @@ class _HomePageState extends State<HomePage> {
   late final RoomService _roomService = widget.roomService ?? RoomService();
   late final PlantService _plantService = widget.plantService ?? PlantService();
   late final HouseService _houseService = widget.houseService ?? HouseService();
-  late final ProfileService _profileService = widget.profileService ?? ProfileService();
-  late final NotificationService _notificationService = widget.notificationService ?? NotificationService();
+  late final ProfileService _profileService =
+      widget.profileService ?? ProfileService();
+  late final NotificationService _notificationService =
+      widget.notificationService ?? NotificationService();
 
   List<Room> _rooms = [];
   List<House> _houses = [];
   House? _activeHouse;
   UserProfile? _userProfile;
   bool _isLoading = true;
+  bool _isOffline = false;
   String? _error;
   String _selectedFilter = 'all'; // all, thirsty, room filter
   String _searchQuery = ''; // Search query for filtering plants
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final GlobalKey<ScaffoldMessengerState> _messengerKey = GlobalKey<ScaffoldMessengerState>();
+  final GlobalKey<ScaffoldMessengerState> _messengerKey =
+      GlobalKey<ScaffoldMessengerState>();
+
+  FcmService? _fcmService;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    // Auto-refresh when a push notification arrives (invitation accepted, new member, etc.)
+    _fcmService = widget.fcmService ?? FcmService();
+    _fcmService!.addOnMessageListener(_onFcmMessage);
   }
 
   @override
   void dispose() {
+    _fcmService?.removeOnMessageListener(_onFcmMessage);
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Called when a FCM push arrives while the app is in foreground
+  void _onFcmMessage(Map<String, dynamic> data) {
+    final type = data['type'];
+    if (type == 'MEMBER_JOINED' || type == 'HOUSE_INVITATION') {
+      // Reload houses + rooms (new member joined, or invitation status changed)
+      _loadData();
+    }
   }
 
   Future<void> _loadData() async {
@@ -98,7 +122,10 @@ class _HomePageState extends State<HomePage> {
       // Schedule notifications for plants in the active house (if notifications enabled for this house)
       if (_activeHouse != null && _activeHouse!.id.isNotEmpty) {
         final plants = await _plantService.getMyPlants();
-        await _notificationService.scheduleAllReminders(plants, houseId: _activeHouse!.id);
+        await _notificationService.scheduleAllReminders(
+          plants,
+          houseId: _activeHouse!.id,
+        );
       }
     } catch (e) {
       debugPrint('Error scheduling notifications: $e');
@@ -121,16 +148,19 @@ class _HomePageState extends State<HomePage> {
       final houses = await _houseService.getMyHouses();
       setState(() {
         _houses = houses;
+        if (_houseService.lastRequestFromCache) _isOffline = true;
         _activeHouse = houses.firstWhere(
           (h) => h.isActive,
-          orElse: () => houses.isNotEmpty ? houses.first : House(
-            id: '',
-            name: 'Aucune maison',
-            inviteCode: '',
-            memberCount: 0,
-            roomCount: 0,
-            isActive: false,
-          ),
+          orElse: () => houses.isNotEmpty
+              ? houses.first
+              : House(
+                  id: '',
+                  name: 'Aucune maison',
+                  inviteCode: '',
+                  memberCount: 0,
+                  roomCount: 0,
+                  isActive: false,
+                ),
         );
       });
     } catch (e) {
@@ -172,6 +202,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _isLoading = true;
       _error = null;
+      _isOffline = false;
     });
 
     try {
@@ -179,6 +210,7 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _rooms = rooms;
         _isLoading = false;
+        if (_roomService.lastRequestFromCache) _isOffline = true;
       });
     } catch (e) {
       setState(() {
@@ -191,7 +223,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _waterPlant(String plantId) async {
     try {
       final updatedPlant = await _plantService.waterPlant(plantId);
-      
+
       // Update the plant locally without reloading everything
       // This prevents the scroll from jumping to the top
       setState(() {
@@ -210,7 +242,9 @@ class _HomePageState extends State<HomePage> {
                   PlantSummary(
                     id: updatedPlant.id,
                     nickname: updatedPlant.nickname,
-                    speciesCommonName: updatedPlant.speciesCommonName ?? roomPlants[j].speciesCommonName,
+                    speciesCommonName:
+                        updatedPlant.speciesCommonName ??
+                        roomPlants[j].speciesCommonName,
                     photoUrl: updatedPlant.photoUrl ?? roomPlants[j].photoUrl,
                     needsWatering: updatedPlant.needsWatering,
                     nextWateringDate: updatedPlant.nextWateringDate,
@@ -226,7 +260,7 @@ class _HomePageState extends State<HomePage> {
           }
         }
       });
-      
+
       // Reschedule all notifications (summary mode)
       await _scheduleNotifications();
 
@@ -240,9 +274,10 @@ class _HomePageState extends State<HomePage> {
       }
     } catch (e) {
       if (mounted) {
+        final message = e.toString().replaceFirst('Exception: ', '');
         _messengerKey.currentState!.showSnackBar(
           SnackBar(
-            content: Text('Erreur: $e'),
+            content: Text(message),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -262,18 +297,18 @@ class _HomePageState extends State<HomePage> {
 
   /// Navigate to plant details page
   void _navigateToPlantDetails(PlantSummary plant) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PlantDetailsPage(
-          plantId: plant.id,
-          plantName: plant.nickname,
-        ),
-      ),
-    ).then((result) {
-      // Only refresh if something changed (deletion returns true)
-      // Use silent refresh to preserve scroll position
-      _silentRefresh();
-    });
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (_) =>
+                PlantDetailsPage(plantId: plant.id, plantName: plant.nickname),
+          ),
+        )
+        .then((result) {
+          // Only refresh if something changed (deletion returns true)
+          // Use silent refresh to preserve scroll position
+          _silentRefresh();
+        });
   }
 
   /// Refresh data without showing loading state (preserves scroll position)
@@ -344,7 +379,11 @@ class _HomePageState extends State<HomePage> {
                       color: Colors.orange.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.notifications, color: Colors.orange, size: 24),
+                    child: const Icon(
+                      Icons.notifications,
+                      color: Colors.orange,
+                      size: 24,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -381,7 +420,11 @@ class _HomePageState extends State<HomePage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.check_circle_outline, size: 64, color: AppTheme.successColor),
+                          Icon(
+                            Icons.check_circle_outline,
+                            size: 64,
+                            color: AppTheme.successColor,
+                          ),
                           const SizedBox(height: 16),
                           const Text(
                             'Tout est en ordre !',
@@ -411,7 +454,11 @@ class _HomePageState extends State<HomePage> {
                             padding: const EdgeInsets.only(bottom: 12),
                             child: Row(
                               children: [
-                                const Icon(Icons.home, size: 18, color: AppTheme.primaryColor),
+                                const Icon(
+                                  Icons.home,
+                                  size: 18,
+                                  color: AppTheme.primaryColor,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   _activeHouse!.name,
@@ -426,10 +473,12 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ],
                         // Rooms with plants
-                        ...plantsByRoom.entries.map((entry) => _buildNotificationRoomSection(
-                              entry.key,
-                              entry.value,
-                            )),
+                        ...plantsByRoom.entries.map(
+                          (entry) => _buildNotificationRoomSection(
+                            entry.key,
+                            entry.value,
+                          ),
+                        ),
                       ],
                     ),
             ),
@@ -439,7 +488,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildNotificationRoomSection(String roomName, List<PlantSummary> plants) {
+  Widget _buildNotificationRoomSection(
+    String roomName,
+    List<PlantSummary> plants,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -463,36 +515,47 @@ class _HomePageState extends State<HomePage> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: plants.map((plant) => InkWell(
-              onTap: () {
-                Navigator.pop(context);
-                _navigateToPlantDetails(plant);
-              },
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.orange.shade200),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.water_drop, size: 14, color: Colors.orange.shade700),
-                    const SizedBox(width: 4),
-                    Text(
-                      plant.nickname,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.orange.shade800,
+            children: plants
+                .map(
+                  (plant) => InkWell(
+                    onTap: () {
+                      Navigator.pop(context);
+                      _navigateToPlantDetails(plant);
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.water_drop,
+                            size: 14,
+                            color: Colors.orange.shade700,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            plant.nickname,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.orange.shade800,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            )).toList(),
+                  ),
+                )
+                .toList(),
           ),
         ],
       ),
@@ -504,32 +567,44 @@ class _HomePageState extends State<HomePage> {
 
     // Apply search filter first
     if (_searchQuery.isNotEmpty) {
-      result = result.map((room) {
-        final matchingPlants = room.plants.where((p) =>
-            p.nickname.toLowerCase().contains(_searchQuery.toLowerCase())
-        ).toList();
-        return Room(
-          id: room.id,
-          name: room.name,
-          type: room.type,
-          plantCount: matchingPlants.length,
-          plants: matchingPlants,
-        );
-      }).where((room) => room.plants.isNotEmpty).toList();
+      result = result
+          .map((room) {
+            final matchingPlants = room.plants
+                .where(
+                  (p) => p.nickname.toLowerCase().contains(
+                    _searchQuery.toLowerCase(),
+                  ),
+                )
+                .toList();
+            return Room(
+              id: room.id,
+              name: room.name,
+              type: room.type,
+              plantCount: matchingPlants.length,
+              plants: matchingPlants,
+            );
+          })
+          .where((room) => room.plants.isNotEmpty)
+          .toList();
     }
 
     // Then apply room/thirsty filter
     if (_selectedFilter == 'thirsty') {
-      result = result.map((room) {
-        final thirstyPlants = room.plants.where((p) => p.needsWatering).toList();
-        return Room(
-          id: room.id,
-          name: room.name,
-          type: room.type,
-          plantCount: thirstyPlants.length,
-          plants: thirstyPlants,
-        );
-      }).where((room) => room.plants.isNotEmpty).toList();
+      result = result
+          .map((room) {
+            final thirstyPlants = room.plants
+                .where((p) => p.needsWatering)
+                .toList();
+            return Room(
+              id: room.id,
+              name: room.name,
+              type: room.type,
+              plantCount: thirstyPlants.length,
+              plants: thirstyPlants,
+            );
+          })
+          .where((room) => room.plants.isNotEmpty)
+          .toList();
     } else if (_selectedFilter != 'all') {
       result = result.where((r) => r.name == _selectedFilter).toList();
     }
@@ -546,6 +621,7 @@ class _HomePageState extends State<HomePage> {
         body: SafeArea(
           child: Column(
             children: [
+              if (_isOffline) const OfflineBanner(),
               _buildHeader(),
               _buildSearchBar(),
               _buildFilterChips(),
@@ -553,8 +629,8 @@ class _HomePageState extends State<HomePage> {
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : _error != null
-                        ? _buildErrorState()
-                        : _buildRoomsList(),
+                    ? _buildErrorState()
+                    : _buildRoomsList(),
               ),
             ],
           ),
@@ -664,12 +740,18 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(color: AppTheme.textGrey(context), fontSize: 12),
+                    style: TextStyle(
+                      color: AppTheme.textGrey(context),
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -743,20 +825,17 @@ class _HomePageState extends State<HomePage> {
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        builder: (context) => Padding(
-          padding: const EdgeInsets.all(24),
-          child: content,
-        ),
+        builder: (context) =>
+            Padding(padding: const EdgeInsets.all(24), child: content),
       );
     } else {
       showDialog(
         context: context,
         builder: (context) => Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: content,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
           ),
+          child: Padding(padding: const EdgeInsets.all(24), child: content),
         ),
       );
     }
@@ -792,7 +871,10 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 8),
               Text(
                 'Pour une meilleure identification, prenez une photo claire des feuilles',
-                style: TextStyle(fontSize: 13, color: AppTheme.textGrey(context)),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.textGrey(context),
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
@@ -806,7 +888,10 @@ class _HomePageState extends State<HomePage> {
                   child: const Icon(Icons.camera_alt, color: Colors.blue),
                 ),
                 title: const Text('Appareil photo'),
-                subtitle: Text('Prendre une nouvelle photo', style: TextStyle(color: AppTheme.textGrey(context))),
+                subtitle: Text(
+                  'Prendre une nouvelle photo',
+                  style: TextStyle(color: AppTheme.textGrey(context)),
+                ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.pop(context, ImageSource.camera),
               ),
@@ -817,10 +902,16 @@ class _HomePageState extends State<HomePage> {
                     color: AppTheme.primaryColor.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.photo_library, color: AppTheme.primaryColor),
+                  child: const Icon(
+                    Icons.photo_library,
+                    color: AppTheme.primaryColor,
+                  ),
                 ),
                 title: const Text('Galerie'),
-                subtitle: Text('Choisir une photo existante', style: TextStyle(color: AppTheme.textGrey(context))),
+                subtitle: Text(
+                  'Choisir une photo existante',
+                  style: TextStyle(color: AppTheme.textGrey(context)),
+                ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.pop(context, ImageSource.gallery),
               ),
@@ -862,9 +953,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _navigateToAddPlant() async {
-    final result = await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const AddPlantPage()),
-    );
+    final result = await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const AddPlantPage()));
     if (result == true) {
       _loadData();
       if (mounted) _showSuccessNotification('Plante ajoutee avec succes !');
@@ -878,9 +969,15 @@ class _HomePageState extends State<HomePage> {
           children: [
             const Icon(Icons.check_circle, color: Colors.white, size: 22),
             const SizedBox(width: 10),
-            Text(
-              message,
-              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+            Flexible(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ],
         ),
@@ -904,43 +1001,58 @@ class _HomePageState extends State<HomePage> {
       child: SafeArea(
         bottom: false,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             // House Context Selector (Left/Center)
-            InkWell(
-              onTap: _showHouseContextSelector,
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppTheme.overlayWhite(context, 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        _activeHouse?.name ?? 'Ma Maison',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                        overflow: TextOverflow.ellipsis,
+            Expanded(
+              child: InkWell(
+                onTap: _showHouseContextSelector,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.overlayWhite(context, 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _activeHouse?.name ?? 'Ma Maison',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.keyboard_arrow_down, color: Colors.white),
-                  ],
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.keyboard_arrow_down,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
+            const SizedBox(width: 8),
             // Bell + User Avatar (Right)
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 // Notification Bell
                 GestureDetector(
-                  onTap: _showNotificationSheet,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationsPage(),
+                    ),
+                  ),
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     child: Stack(
@@ -954,6 +1066,7 @@ class _HomePageState extends State<HomePage> {
                           Positioned(
                             right: 0,
                             top: 0,
+                            child: IgnorePointer(
                             child: Container(
                               padding: const EdgeInsets.all(4),
                               decoration: const BoxDecoration(
@@ -965,7 +1078,9 @@ class _HomePageState extends State<HomePage> {
                                 minHeight: 18,
                               ),
                               child: Text(
-                                _thirstyPlantsCount > 9 ? '9+' : '$_thirstyPlantsCount',
+                                _thirstyPlantsCount > 9
+                                    ? '9+'
+                                    : '$_thirstyPlantsCount',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 10,
@@ -975,6 +1090,7 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                           ),
+                          ),
                       ],
                     ),
                   ),
@@ -983,15 +1099,22 @@ class _HomePageState extends State<HomePage> {
                 // User Avatar
                 GestureDetector(
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ProfilePage()),
-                    ).then((_) => _loadData());
+                    Navigator.of(context)
+                        .push(
+                          MaterialPageRoute(
+                            builder: (_) => const ProfilePage(),
+                          ),
+                        )
+                        .then((_) => _loadData());
                   },
                   child: _userProfile?.hasProfilePhoto == true
                       ? CircleAvatar(
                           radius: 20,
                           backgroundImage: NetworkImage(
-                            _profileService.getProfilePhotoFullUrl(_userProfile!.profilePhotoUrl) ?? '',
+                            _profileService.getProfilePhotoFullUrl(
+                                  _userProfile!.profilePhotoUrl,
+                                ) ??
+                                '',
                           ),
                           onBackgroundImageError: (_, __) {},
                         )
@@ -999,9 +1122,10 @@ class _HomePageState extends State<HomePage> {
                           radius: 20,
                           backgroundColor: Colors.white,
                           child: Text(
-                            widget.userEmail.isNotEmpty
-                                ? widget.userEmail[0].toUpperCase()
-                                : 'U',
+                            _userProfile?.initials ??
+                                (widget.userEmail.isNotEmpty
+                                    ? widget.userEmail[0].toUpperCase()
+                                    : 'U'),
                             style: TextStyle(
                               color: AppTheme.primaryColor,
                               fontWeight: FontWeight.bold,
@@ -1018,99 +1142,134 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _showHouseContextSelector() {
+    final mediaQuery = MediaQuery.of(context);
+
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                'Mes Maisons',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+      builder: (context) => SafeArea(
+        top: false,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: mediaQuery.size.height * 0.75),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(0, 24, 0, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'Mes Maisons',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Flexible(
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: _houses.length,
-                itemBuilder: (context, index) {
-                  final house = _houses[index];
-                  final isActive = house.id == _activeHouse?.id;
-                  
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: isActive ? AppTheme.primaryColor.withOpacity(0.1) : AppTheme.lightBg(context),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.home,
-                        color: isActive ? AppTheme.primaryColor : AppTheme.textGrey(context),
-                      ),
-                    ),
-                    title: Text(
-                      house.name,
-                      style: TextStyle(
-                        fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                        color: isActive ? AppTheme.primaryColor : AppTheme.textPrimaryC(context),
-                      ),
-                    ),
-                    trailing: isActive 
-                        ? const Icon(Icons.check_circle, color: AppTheme.primaryColor)
-                        : null,
-                    onTap: () {
-                      Navigator.pop(context);
-                      if (!isActive) {
-                        _switchHouse(house);
-                      }
-                    },
-                  );
-                },
-              ),
-            ),
-            const Divider(height: 32),
-            InkWell(
-              onTap: () {
-                Navigator.pop(context);
-                _showCreateOrJoinDialog();
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppTheme.borderLight(context),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.add, color: AppTheme.textPrimaryC(context)),
-                    ),
-                    const SizedBox(width: 16),
-                    const Text(
-                      'Ajouter ou rejoindre une maison',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 16),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _houses.length,
+                    itemBuilder: (context, index) {
+                      final house = _houses[index];
+                      final isActive = house.id == _activeHouse?.id;
+
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 4,
+                        ),
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isActive
+                                ? AppTheme.primaryColor.withOpacity(0.1)
+                                : AppTheme.lightBg(context),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.home,
+                            color: isActive
+                                ? AppTheme.primaryColor
+                                : AppTheme.textGrey(context),
+                          ),
+                        ),
+                        title: Text(
+                          house.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: isActive
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: isActive
+                                ? AppTheme.primaryColor
+                                : AppTheme.textPrimaryC(context),
+                          ),
+                        ),
+                        trailing: isActive
+                            ? const Icon(
+                                Icons.check_circle,
+                                color: AppTheme.primaryColor,
+                              )
+                            : null,
+                        onTap: () {
+                          Navigator.pop(context);
+                          if (!isActive) {
+                            _switchHouse(house);
+                          }
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const Divider(height: 32),
+                InkWell(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showCreateOrJoinDialog();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.borderLight(context),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.add,
+                            color: AppTheme.textPrimaryC(context),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            'Ajouter ou rejoindre une maison',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -1244,29 +1403,22 @@ class _HomePageState extends State<HomePage> {
     );
 
     if (result != null && result.isNotEmpty) {
-      // Show loading immediately
       setState(() => _isLoading = true);
 
       try {
-        // Join the house and get the returned house object
-        final joinedHouse = await _houseService.joinHouse(result);
+        // Send join request (pending approval by owner)
+        final invitation = await _houseService.requestJoinHouse(result);
 
-        // Switch to the newly joined house
-        await _houseService.switchActiveHouse(joinedHouse.id);
-
-        // Update active house immediately in state
-        setState(() {
-          _activeHouse = joinedHouse;
-        });
-
-        // Reload all data (houses list and rooms for the new house)
-        await _loadData();
+        setState(() => _isLoading = false);
 
         if (mounted) {
           _messengerKey.currentState!.showSnackBar(
             SnackBar(
-              content: Text('Bienvenue dans "${joinedHouse.name}" !'),
+              content: Text(
+                'Demande envoyee pour "${invitation.houseName}" ! En attente d\'approbation du proprietaire.',
+              ),
               backgroundColor: AppTheme.successColor,
+              duration: const Duration(seconds: 4),
             ),
           );
         }
@@ -1315,16 +1467,22 @@ class _HomePageState extends State<HomePage> {
         children: [
           _buildFilterChip('À arroser', 'thirsty', isWarning: true),
           const SizedBox(width: 8),
-          ...roomNames.map((name) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: _buildFilterChip(name, name),
-              )),
+          ...roomNames.map(
+            (name) => Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _buildFilterChip(name, name),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterChip(String label, String value, {bool isWarning = false}) {
+  Widget _buildFilterChip(
+    String label,
+    String value, {
+    bool isWarning = false,
+  }) {
     final isSelected = _selectedFilter == value;
     return FilterChip(
       label: Row(
@@ -1353,7 +1511,7 @@ class _HomePageState extends State<HomePage> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(
-          color: isSelected 
+          color: isSelected
               ? (isWarning ? Colors.orange : AppTheme.primaryColor)
               : AppTheme.divider(context),
         ),
@@ -1367,7 +1525,11 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.eco, size: 64, color: AppTheme.textSecondaryC(context).withOpacity(0.5)),
+            Icon(
+              Icons.eco,
+              size: 64,
+              color: AppTheme.textSecondaryC(context).withOpacity(0.5),
+            ),
             const SizedBox(height: 16),
             Text(
               'Aucune plante trouvée',
@@ -1403,13 +1565,17 @@ class _HomePageState extends State<HomePage> {
             children: [
               Text(room.icon, style: const TextStyle(fontSize: 20)),
               const SizedBox(width: 8),
-              Text(
-                room.name.toUpperCase(),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimaryC(context),
-                      letterSpacing: 1,
-                    ),
+              Flexible(
+                child: Text(
+                  room.name.toUpperCase(),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimaryC(context),
+                        letterSpacing: 1,
+                      ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
               ),
               const Spacer(),
               Text(
@@ -1464,11 +1630,13 @@ class _HomePageState extends State<HomePage> {
             ),
           )
         else
-          ...room.plants.map((plant) => PlantCard(
-            plant: plant,
-            onWater: () => _waterPlant(plant.id),
-            onTap: () => _navigateToPlantDetails(plant),
-          )),
+          ...room.plants.map(
+            (plant) => PlantCard(
+              plant: plant,
+              onWater: () => _waterPlant(plant.id),
+              onTap: () => _navigateToPlantDetails(plant),
+            ),
+          ),
         const SizedBox(height: 8),
       ],
     );
@@ -1483,10 +1651,7 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 16),
           Text('Erreur: $_error'),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _loadRooms,
-            child: const Text('Réessayer'),
-          ),
+          ElevatedButton(onPressed: _loadRooms, child: const Text('Réessayer')),
         ],
       ),
     );
@@ -1501,22 +1666,10 @@ class _HomePageState extends State<HomePage> {
       selectedFontSize: 11,
       unselectedFontSize: 11,
       items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home),
-          label: 'Home',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.grass),
-          label: 'Potager',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.sensors),
-          label: 'IoT',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart),
-          label: 'Stats',
-        ),
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+        BottomNavigationBarItem(icon: Icon(Icons.grass), label: 'Potager'),
+        BottomNavigationBarItem(icon: Icon(Icons.smart_toy_outlined), label: 'Planto IA'),
+        BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Stats'),
         BottomNavigationBarItem(
           icon: Icon(Icons.person_outline),
           label: 'Profil',
@@ -1524,21 +1677,21 @@ class _HomePageState extends State<HomePage> {
       ],
       onTap: (index) {
         if (index == 1) {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const GardenPage()),
-          ).then((_) => _loadData());
+          Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => const GardenPage()))
+              .then((_) => _loadData());
         } else if (index == 2) {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const IotSensorsPage()),
-          ).then((_) => _loadData());
+          Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => const ChatPage()))
+              .then((_) => _loadData());
         } else if (index == 3) {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const StatsPage()),
-          ).then((_) => _loadData());
+          Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => const StatsPage()))
+              .then((_) => _loadData());
         } else if (index == 4) {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const ProfilePage()),
-          ).then((_) => _loadData());
+          Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => const ProfilePage()))
+              .then((_) => _loadData());
         }
       },
     );
